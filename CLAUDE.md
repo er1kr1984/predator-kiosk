@@ -90,5 +90,28 @@ ACS `AddExternalData` payload uses `DataType: 'Text'` for all fields (Asset, Tag
 ## Production
 - Express runs on `localhost:3001` via PM2; nginx reverse-proxies HTTPS 443 → 3001
 - Port 3001 is blocked externally; only 80 (redirect) and 443 (HTTPS) are open
-- `deploy.py <host> <user>` SSHs in, uploads files, builds frontend, sets up PM2 + nginx with a self-signed SSL cert
 - Self-signed cert lives at `/etc/ssl/predator-kiosk/cert.pem` — install into trusted roots to remove browser warning
+
+### First deploy on a new server
+```bash
+git clone https://github.com/er1kr1984/predator-kiosk /opt/predator-kiosk
+cd /opt/predator-kiosk
+bash setup.sh
+nano backend/config.json   # fill in Snipe-IT URL/token and other settings
+```
+`setup.sh` installs Node.js, PM2, nginx, generates the SSL cert, configures the firewall, and starts the app.
+
+### Updating an existing server
+```bash
+cd /opt/predator-kiosk
+git pull
+cd frontend && npm run build && cd ..
+pm2 restart predator-kiosk
+```
+
+### deploy.py (alternative)
+`python deploy.py <host> <user>` does the same as above but driven from your local machine over SSH — useful if you can't SSH in interactively. Requires `pip install paramiko`.
+
+## Branding / version
+- App is branded **E2E Storeroom Kiosk**; the `E2E` badge and version number appear on both the login page and the kiosk header
+- Version is read at build time from `frontend/package.json` via `import { version } from '../../package.json'` — bump it there for releases
