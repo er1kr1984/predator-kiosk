@@ -1,0 +1,712 @@
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getPublicConfig, getAssetByTag, checkoutAsset, checkinAsset, uploadAssetImage, getUserCheckouts } from '../api.js';
+import { useQRScanner } from '../hooks/useQRScanner.js';
+import ThemeToggle from '../components/ThemeToggle.jsx';
+import KioskTour from '../components/KioskTour.jsx';
+
+const STATES = {
+  SCANNING: 'SCANNING',
+  DURATION: 'DURATION',
+  PROCESSING: 'PROCESSING',
+  SUCCESS: 'SUCCESS',
+  ERROR: 'ERROR',
+};
+
+function playBeep(success = true) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = success ? 880 : 280;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (success ? 0.25 : 0.45));
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + (success ? 0.25 : 0.45));
+  } catch {}
+}
+
+function overdueInfo(expectedCheckin) {
+  if (!expectedCheckin) return null;
+  const days = Math.floor((Date.now() - new Date(expectedCheckin).getTime()) / 86400000);
+  return days > 0 ? days : null;
+}
+
+function addHours(hours) {
+  const d = new Date();
+  d.setHours(d.getHours() + hours);
+  return d.toISOString().split('T')[0];
+}
+
+function formatDate(isoString) {
+  if (!isoString) return '—';
+  return new Date(isoString).toLocaleDateString('en-GB', {
+    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
+  });
+}
+
+export default function KioskPage() {
+  const navigate = useNavigate();
+  const user = JSON.parse(sessionStorage.getItem('kioskUser') || '{}');
+  const isAdmin = sessionStorage.getItem('kioskIsAdmin') === 'true';
+
+  const [config, setConfig] = useState(null);
+  const [state, setState] = useState(STATES.SCANNING);
+  const [basket, setBasket] = useState([]);          // { asset, action: 'checkout'|'checkin' }
+  const [scanning, setScanning] = useState(false);   // true while looking up a scanned tag
+  const [scanMsg, setScanMsg] = useState('');        // feedback under camera
+  const [selectedPreset, setSelectedPreset] = useState(null);
+  const [customDate, setCustomDate] = useState('');
+  const [useCustom, setUseCustom] = useState(false);
+  const [results, setResults] = useState([]);        // per-item results after checkout
+  const [manualTag, setManualTag] = useState('');
+  const [countdown, setCountdown] = useState(10);
+  const countdownRef = useRef(null);
+  const [showTour, setShowTour] = useState(() => !localStorage.getItem('kioskTourDone'));
+  const [note, setNote] = useState('');
+  const [userCheckouts, setUserCheckouts] = useState([]);
+  const [imageUploading, setImageUploading] = useState({});  // { [index]: true/false }
+  const [imageMsg, setImageMsg] = useState({});              // { [index]: 'ok'|'error msg' }
+  const [idleSecondsLeft, setIdleSecondsLeft] = useState(null); // null = active, 1-10 = warning
+  const idleTimerRef = useRef(null);
+  const idleCountdownRef = useRef(null);
+  const IDLE_TIMEOUT = 300;
+  const IDLE_WARN_AT = 10;
+
+  useEffect(() => {
+    getPublicConfig().then((cfg) => {
+      setConfig(cfg);
+      const def = (cfg.durationPresets || []).find((p) => p.default) || cfg.durationPresets?.[cfg.durationPresets.length - 1];
+      setSelectedPreset(def || null);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!user.id) return;
+    getUserCheckouts(user.id)
+      .then((data) => setUserCheckouts(data?.rows || []))
+      .catch(() => {});
+  }, [user.id]);
+
+  const resetToScanning = useCallback(() => {
+    setState(STATES.SCANNING);
+    setBasket([]);
+    setManualTag('');
+    setUseCustom(false);
+    setScanMsg('');
+    setResults([]);
+    setNote('');
+    clearInterval(countdownRef.current);
+    // Refresh user's checkouts after a transaction
+    if (user.id) {
+      getUserCheckouts(user.id)
+        .then((data) => setUserCheckouts(data?.rows || []))
+        .catch(() => {});
+    }
+  }, [user.id]);
+
+  useEffect(() => {
+    if (state === STATES.SUCCESS) {
+      setCountdown(10);
+      countdownRef.current = setInterval(() => {
+        setCountdown((c) => {
+          if (c <= 1) { clearInterval(countdownRef.current); resetToScanning(); return 0; }
+          return c - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(countdownRef.current);
+  }, [state, resetToScanning]);
+
+  // Idle sign-out after 60s of no activity
+  const resetIdleTimer = useCallback(() => {
+    setIdleSecondsLeft(null);
+    clearTimeout(idleTimerRef.current);
+    clearInterval(idleCountdownRef.current);
+
+    // After (IDLE_TIMEOUT - IDLE_WARN_AT) seconds, start the warning countdown
+    idleTimerRef.current = setTimeout(() => {
+      setIdleSecondsLeft(IDLE_WARN_AT);
+      idleCountdownRef.current = setInterval(() => {
+        setIdleSecondsLeft((s) => {
+          if (s <= 1) {
+            clearInterval(idleCountdownRef.current);
+            sessionStorage.removeItem('kioskUser');
+            navigate('/');
+            return 0;
+          }
+          return s - 1;
+        });
+      }, 1000);
+    }, (IDLE_TIMEOUT - IDLE_WARN_AT) * 1000);
+  }, [navigate]);
+
+  useEffect(() => {
+    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'];
+    events.forEach((e) => window.addEventListener(e, resetIdleTimer, { passive: true }));
+    resetIdleTimer();
+    return () => {
+      events.forEach((e) => window.removeEventListener(e, resetIdleTimer));
+      clearTimeout(idleTimerRef.current);
+      clearInterval(idleCountdownRef.current);
+    };
+  }, [resetIdleTimer]);
+
+  const processTag = useCallback(
+    async (tag) => {
+      if (state !== STATES.SCANNING || scanning) return;
+
+      // Prevent duplicate scans
+      const tagLower = tag.toLowerCase();
+      const alreadyIn = basket.some(
+        (b) => b.asset.asset_tag?.toLowerCase() === tagLower ||
+               String(b.asset.id) === tagLower ||
+               tag.includes(`/ht/${b.asset.asset_tag}`) ||
+               tag.includes(`/hardware/${b.asset.id}`)
+      );
+      if (alreadyIn) {
+        playBeep(false);
+        setScanMsg('Already in basket');
+        setTimeout(() => setScanMsg(''), 2000);
+        return;
+      }
+
+      setScanning(true);
+      setScanMsg('Looking up asset...');
+      try {
+        const asset = await getAssetByTag(tag);
+        if (!asset || !asset.id) {
+          setScanMsg('Asset not found');
+          setTimeout(() => setScanMsg(''), 3000);
+          return;
+        }
+        const isCheckedOut = !!asset.assigned_to;
+        const isAvailable = asset.status_label?.status_meta === 'deployable';
+        const action = isCheckedOut ? 'checkin' : 'checkout';
+
+        if (!isAvailable && !isCheckedOut) {
+          playBeep(false);
+          setScanMsg(`"${asset.name}" is not available`);
+          setTimeout(() => setScanMsg(''), 4000);
+          return;
+        }
+
+        playBeep(true);
+        setBasket((b) => [...b, { asset, action }]);
+        setScanMsg(isCheckedOut
+          ? `Return: ${asset.name} (checked out to ${asset.assigned_to?.name || 'unknown'})`
+          : `Added: ${asset.name}`);
+        setTimeout(() => setScanMsg(''), 2500);
+      } catch (e) {
+        playBeep(false);
+        setScanMsg(e.response?.data?.error || 'Lookup failed');
+        setTimeout(() => setScanMsg(''), 3000);
+      } finally {
+        setScanning(false);
+      }
+    },
+    [state, scanning, basket, user.id]
+  );
+
+  const { videoRef, canvasRef } = useQRScanner({
+    cameraType: config?.cameraType || 'webcam',
+    active: state === STATES.SCANNING && !scanning,
+    onDetected: processTag,
+  });
+
+  const removeFromBasket = (index) => setBasket((b) => b.filter((_, i) => i !== index));
+
+  const handleImageUpload = async (index, assetId, file) => {
+    setImageUploading((u) => ({ ...u, [index]: true }));
+    setImageMsg((m) => ({ ...m, [index]: '' }));
+    try {
+      await uploadAssetImage(assetId, file);
+      setImageMsg((m) => ({ ...m, [index]: 'ok' }));
+    } catch (e) {
+      setImageMsg((m) => ({ ...m, [index]: e.response?.data?.error || 'Upload failed' }));
+    } finally {
+      setImageUploading((u) => ({ ...u, [index]: false }));
+    }
+  };
+
+  const dueDate = useCustom ? customDate : (selectedPreset ? addHours(selectedPreset.hours) : null);
+
+  async function handleCheckoutAll() {
+    setState(STATES.PROCESSING);
+    const checkouts = basket.filter((b) => b.action === 'checkout');
+    const checkins = basket.filter((b) => b.action === 'checkin');
+
+    const settled = await Promise.allSettled([
+      ...checkouts.map((b) => checkoutAsset(b.asset.id, user.id, dueDate, b.asset, user.name, note).then(() => ({ name: b.asset.name, action: 'checkout', ok: true }))),
+      ...checkins.map((b) => checkinAsset(b.asset.id, b.asset, user.name, note).then(() => ({ name: b.asset.name, action: 'checkin', ok: true }))),
+    ]);
+
+    setResults(settled.map((s, i) => ({
+      name: basket[i]?.asset.name,
+      action: basket[i]?.action,
+      ok: s.status === 'fulfilled',
+      error: s.reason?.response?.data?.error || s.reason?.message,
+    })));
+    setState(STATES.SUCCESS);
+  }
+
+  const checkoutCount = basket.filter((b) => b.action === 'checkout').length;
+  const checkinCount = basket.filter((b) => b.action === 'checkin').length;
+  const presets = config?.durationPresets || [];
+
+  return (
+    <div className="h-screen bg-slate-200 dark:bg-slate-900 flex flex-col overflow-hidden transition-colors">
+      {/* Header */}
+      <header className="bg-slate-700 dark:bg-slate-800 px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between flex-shrink-0 transition-colors gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-3 h-3 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
+          <span className="text-white text-base sm:text-lg font-semibold hidden sm:inline">Store Room Kiosk</span>
+          <span className="text-slate-300 text-sm sm:text-lg truncate">
+            <span className="hidden sm:inline">Signed in as </span>
+            <span className="text-white font-semibold">{user.name || user.username}</span>
+          </span>
+        </div>
+        <div className="flex items-center gap-1 sm:gap-3 flex-shrink-0">
+          <ThemeToggle />
+          <button
+            onClick={() => setShowTour(true)}
+            className="bg-slate-600 hover:bg-slate-500 dark:bg-slate-700 dark:hover:bg-slate-600 text-white w-8 h-8 sm:w-9 sm:h-9 rounded-lg text-sm sm:text-base font-bold transition-colors flex items-center justify-center"
+            title="Help"
+          >
+            ?
+          </button>
+          {isAdmin && (
+            <button
+              onClick={() => navigate('/admin')}
+              className="bg-slate-600 hover:bg-slate-500 dark:bg-slate-700 dark:hover:bg-slate-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-sm sm:text-base transition-colors"
+            >
+              Admin
+            </button>
+          )}
+          <button
+            onClick={() => { sessionStorage.removeItem('kioskUser'); sessionStorage.removeItem('kioskIsAdmin'); navigate('/'); }}
+            className="bg-slate-500 hover:bg-slate-400 dark:bg-slate-600 dark:hover:bg-slate-500 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-sm sm:text-base transition-colors"
+          >
+            Sign Out
+          </button>
+        </div>
+      </header>
+
+      {/* Idle warning banner */}
+      {idleSecondsLeft !== null && (
+        <div className="bg-amber-500 text-white text-center py-3 text-lg font-semibold flex-shrink-0">
+          Signing out in {idleSecondsLeft}s due to inactivity —{' '}
+          <button onClick={resetIdleTimer} className="underline font-bold hover:text-amber-100">
+            Stay signed in
+          </button>
+        </div>
+      )}
+
+      <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
+        {/* Camera panel */}
+        <div id="tour-camera" className="w-full md:w-3/5 h-52 sm:h-64 md:h-auto flex-shrink-0 md:flex-shrink bg-black flex flex-col items-center justify-center relative">
+          {config?.cameraType === 'webcam' ? (
+            <video ref={videoRef} className="w-full h-full object-cover" muted playsInline />
+          ) : (
+            <img src="/api/camera/stream" alt="Camera feed" className="w-full h-full object-cover" />
+          )}
+          <canvas ref={canvasRef} className="hidden" />
+
+          {/* Scan target box */}
+          {state === STATES.SCANNING && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              {/* Corner brackets instead of a full border — less visual noise */}
+              <div className={`relative w-48 h-48 sm:w-56 sm:h-56 md:w-72 md:h-72 transition-colors ${scanning ? 'text-yellow-400' : 'text-blue-400'}`}>
+                {/* Top-left */}
+                <span className="absolute top-0 left-0 w-7 h-7 border-t-4 border-l-4 rounded-tl-lg border-current" />
+                {/* Top-right */}
+                <span className="absolute top-0 right-0 w-7 h-7 border-t-4 border-r-4 rounded-tr-lg border-current" />
+                {/* Bottom-left */}
+                <span className="absolute bottom-0 left-0 w-7 h-7 border-b-4 border-l-4 rounded-bl-lg border-current" />
+                {/* Bottom-right */}
+                <span className="absolute bottom-0 right-0 w-7 h-7 border-b-4 border-r-4 rounded-br-lg border-current" />
+                {/* Scanning pulse */}
+                {scanning && (
+                  <span className="absolute inset-0 rounded-lg border-2 border-yellow-400 animate-ping opacity-40" />
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Scan feedback */}
+          {scanMsg && (
+            <div className="absolute top-2 left-2 right-2 flex justify-center">
+              <div className={`px-4 py-2 rounded-xl text-sm sm:text-base font-semibold shadow-lg text-center ${
+                scanMsg.startsWith('Added') || scanMsg.startsWith('Return') ? 'bg-green-600 text-white' :
+                scanMsg === 'Already in basket' ? 'bg-yellow-500 text-white' :
+                'bg-red-600 text-white'
+              }`}>
+                {scanMsg}
+              </div>
+            </div>
+          )}
+
+          {/* Manual tag input */}
+          <div id="tour-manual-input" className="absolute bottom-2 left-2 right-2">
+            <form
+              onSubmit={(e) => { e.preventDefault(); if (manualTag.trim()) { processTag(manualTag.trim()); setManualTag(''); } }}
+              className="flex gap-2"
+            >
+              <input
+                type="text"
+                value={manualTag}
+                onChange={(e) => setManualTag(e.target.value)}
+                placeholder="Type asset tag..."
+                className="flex-1 bg-black/60 text-white placeholder-slate-400 border border-slate-600 rounded-xl px-3 py-2 text-base focus:outline-none focus:border-blue-400"
+                disabled={state !== STATES.SCANNING}
+              />
+              <button
+                type="submit"
+                disabled={!manualTag.trim() || state !== STATES.SCANNING}
+                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-base font-semibold transition-colors"
+              >
+                Add
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* Right panel */}
+        <div id="tour-basket-panel" className="flex-1 min-h-0 w-full md:w-2/5 bg-white dark:bg-slate-800 flex flex-col overflow-hidden transition-colors">
+
+          {/* SCANNING — basket view */}
+          {state === STATES.SCANNING && (
+            <>
+              <div className="flex-1 overflow-y-auto p-3 sm:p-6 flex flex-col gap-3 bg-white dark:bg-slate-800 transition-colors">
+                <h2 className="text-2xl font-bold text-slate-700 dark:text-slate-200 flex items-center justify-between">
+                  Basket
+                  {basket.length > 0 && (
+                    <span className="bg-blue-600 text-white text-base font-bold px-3 py-1 rounded-full">
+                      {basket.length}
+                    </span>
+                  )}
+                </h2>
+
+                {basket.length === 0 ? (
+                  <div className="flex-1 flex flex-col">
+                    <div className="flex flex-col items-center justify-center text-center py-8">
+                      <div className="text-5xl mb-4">🛒</div>
+                      <p className="text-slate-400 dark:text-slate-500 text-xl">Scan items to add them to your basket</p>
+                    </div>
+                    {userCheckouts.length > 0 && (
+                      <div className="mt-2">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                            Your current checkouts
+                          </h3>
+                          {userCheckouts.some((a) => !basket.some((b) => b.asset.id === a.id)) && (
+                            <button
+                              onClick={() => {
+                                const toAdd = userCheckouts.filter((a) => !basket.some((b) => b.asset.id === a.id));
+                                playBeep(true);
+                                setBasket((prev) => [...prev, ...toAdd.map((asset) => ({ asset, action: 'checkin' }))]);
+                              }}
+                              className="text-sm font-semibold px-3 py-1 rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors"
+                            >
+                              Return All
+                            </button>
+                          )}
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          {userCheckouts.map((asset) => {
+                            const days = overdueInfo(asset.expected_checkin);
+                            const inBasket = basket.some((b) => b.asset.id === asset.id);
+                            return (
+                              <div key={asset.id} className="flex items-center gap-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-semibold text-slate-800 dark:text-white truncate">{asset.name}</p>
+                                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                    <span className="text-xs text-slate-400 dark:text-slate-500">{asset.asset_tag}</span>
+                                    {asset.expected_checkin && (
+                                      <span className="text-xs text-slate-400 dark:text-slate-500">
+                                        Due {formatDate(asset.expected_checkin)}
+                                      </span>
+                                    )}
+                                    {days && (
+                                      <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400">
+                                        {days}d overdue
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <button
+                                  disabled={inBasket}
+                                  onClick={() => {
+                                    if (inBasket) return;
+                                    playBeep(true);
+                                    setBasket((b) => [...b, { asset, action: 'checkin' }]);
+                                  }}
+                                  className="flex-shrink-0 text-sm font-semibold px-3 py-1.5 rounded-lg border-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed border-green-500 text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20"
+                                >
+                                  {inBasket ? 'Added' : 'Return'}
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  basket.map((item, i) => (
+                    <div key={i} className="flex items-start gap-2 sm:gap-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl p-3 sm:p-4 transition-colors">
+                      {/* Product image */}
+                      {item.asset.image ? (
+                        <img
+                          src={item.asset.image}
+                          alt={item.asset.name}
+                          className="w-14 h-14 sm:w-20 sm:h-20 object-contain rounded-lg bg-white border border-slate-200 flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-lg bg-slate-200 border border-slate-200 flex-shrink-0 flex items-center justify-center text-slate-400 text-2xl sm:text-3xl">
+                          📦
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        {/* Product name */}
+                        <p className="text-lg font-semibold text-slate-800 dark:text-white leading-tight">{item.asset.name}</p>
+                        {/* Model */}
+                        {item.asset.model?.name && (
+                          <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">{item.asset.model.name}</p>
+                        )}
+                        {/* Asset tag + Serial */}
+                        <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
+                          <span className="text-slate-500 dark:text-slate-400 text-sm">
+                            <span className="font-medium text-slate-600 dark:text-slate-300">Tag:</span> {item.asset.asset_tag}
+                          </span>
+                          {item.asset.serial && (
+                            <span className="text-slate-500 dark:text-slate-400 text-sm">
+                              <span className="font-medium text-slate-600 dark:text-slate-300">S/N:</span> {item.asset.serial}
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-2 flex items-center gap-2 flex-wrap">
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                            item.action === 'checkin'
+                              ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
+                              : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'
+                          }`}>
+                            {item.action === 'checkin' ? 'Return' : 'Check Out'}
+                          </span>
+                          {item.action === 'checkin' && item.asset.assigned_to?.name && (
+                            <span className="text-xs text-slate-500 dark:text-slate-400">
+                              checked out to <span className="font-semibold">{item.asset.assigned_to.name}</span>
+                            </span>
+                          )}
+                          {item.action === 'checkin' && (() => {
+                            const days = overdueInfo(item.asset.expected_checkin);
+                            return days ? (
+                              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400">
+                                {days}d overdue
+                              </span>
+                            ) : null;
+                          })()}
+                        </div>
+                        <div className="mt-2 flex items-center gap-2">
+                          <label className={`cursor-pointer text-sm px-3 py-1 rounded-lg border transition-colors ${
+                            imageUploading[i]
+                              ? 'border-slate-300 text-slate-400'
+                              : 'border-slate-300 hover:border-blue-400 text-slate-500 hover:text-blue-500'
+                          }`}>
+                            {imageUploading[i] ? 'Uploading...' : 'Add photo'}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              capture="environment"
+                              className="hidden"
+                              disabled={imageUploading[i]}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleImageUpload(i, item.asset.id, file);
+                                e.target.value = '';
+                              }}
+                            />
+                          </label>
+                          {imageMsg[i] === 'ok' && (
+                            <span className="text-green-600 text-sm font-semibold">Uploaded</span>
+                          )}
+                          {imageMsg[i] && imageMsg[i] !== 'ok' && (
+                            <span className="text-red-500 text-sm">{imageMsg[i]}</span>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => removeFromBasket(i)}
+                        className="text-slate-400 hover:text-red-500 text-2xl font-bold leading-none transition-colors flex-shrink-0"
+                        title="Remove"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {basket.length > 0 && (
+                <div className="p-3 sm:p-6 border-t border-slate-200 dark:border-slate-700 flex flex-col gap-2 sm:gap-3">
+                  <div className="text-slate-500 dark:text-slate-400 text-sm text-center">
+                    {checkoutCount > 0 && <span>{checkoutCount} to check out</span>}
+                    {checkoutCount > 0 && checkinCount > 0 && <span> · </span>}
+                    {checkinCount > 0 && <span>{checkinCount} to return</span>}
+                  </div>
+                  <button
+                    onClick={() => checkoutCount > 0 ? setState(STATES.DURATION) : handleCheckoutAll()}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-2xl font-bold py-5 rounded-2xl transition-colors"
+                  >
+                    {checkoutCount > 0 ? 'Choose Duration' : 'Return All'}
+                  </button>
+                  <button
+                    onClick={resetToScanning}
+                    className="w-full border border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 text-slate-600 dark:text-slate-300 py-3 rounded-2xl text-lg transition-colors"
+                  >
+                    Clear Basket
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* DURATION */}
+          {state === STATES.DURATION && (
+            <div className="flex-1 flex flex-col p-4 sm:p-8 gap-3 sm:gap-5 overflow-y-auto">
+              <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-white">How long do you need them?</h2>
+              <p className="text-slate-500 dark:text-slate-400 text-base">Applies to all {checkoutCount} item{checkoutCount !== 1 ? 's' : ''} being checked out.</p>
+
+              <div className="grid grid-cols-2 gap-3">
+                {presets.map((preset) => (
+                  <button
+                    key={preset.label}
+                    onClick={() => { setSelectedPreset(preset); setUseCustom(false); }}
+                    className={`py-5 rounded-2xl text-xl font-semibold border-2 transition-colors ${
+                      !useCustom && selectedPreset?.label === preset.label
+                        ? 'bg-blue-600 border-blue-600 text-white'
+                        : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-blue-400'
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setUseCustom(true)}
+                  className={`py-5 rounded-2xl text-xl font-semibold border-2 transition-colors col-span-2 ${
+                    useCustom
+                      ? 'bg-blue-600 border-blue-600 text-white'
+                      : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-blue-400'
+                  }`}
+                >
+                  Custom Date
+                </button>
+              </div>
+
+              {useCustom && (
+                <input
+                  type="date"
+                  value={customDate}
+                  min={new Date().toISOString().split('T')[0]}
+                  onChange={(e) => setCustomDate(e.target.value)}
+                  className="w-full border-2 border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl px-4 py-4 text-xl focus:outline-none focus:border-blue-500 transition-colors"
+                />
+              )}
+
+              {dueDate && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl px-5 py-3 text-blue-700 text-lg text-center">
+                  Return by: <span className="font-bold">{formatDate(dueDate)}</span>
+                </div>
+              )}
+
+              <div className="flex flex-col gap-1">
+                <label className="text-slate-600 dark:text-slate-300 font-semibold text-base">
+                  Note <span className="text-slate-400 font-normal">(optional)</span>
+                </label>
+                <textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="Reason, location, project..."
+                  rows={2}
+                  className="border-2 border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl px-4 py-3 text-base focus:outline-none focus:border-blue-500 resize-none transition-colors"
+                />
+              </div>
+
+              <div className="flex gap-3 mt-auto">
+                <button
+                  onClick={() => setState(STATES.SCANNING)}
+                  className="flex-1 border border-slate-300 dark:border-slate-600 hover:border-slate-400 text-slate-600 dark:text-slate-300 py-4 rounded-2xl text-xl transition-colors"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={handleCheckoutAll}
+                  disabled={useCustom ? !customDate : !selectedPreset}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white py-4 rounded-2xl text-xl font-bold transition-colors"
+                >
+                  Check Out All
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* PROCESSING */}
+          {state === STATES.PROCESSING && (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+              <div className="text-6xl mb-6 animate-spin">⚙️</div>
+              <h2 className="text-3xl font-bold text-slate-700 dark:text-slate-200">Processing {basket.length} item{basket.length !== 1 ? 's' : ''}...</h2>
+            </div>
+          )}
+
+          {/* SUCCESS */}
+          {state === STATES.SUCCESS && (
+            <div className="flex-1 flex flex-col p-4 sm:p-8 gap-3 sm:gap-4 overflow-y-auto">
+              <div className="text-center">
+                <div className="text-6xl mb-3">✅</div>
+                <h2 className="text-3xl font-bold text-green-700">Done!</h2>
+                {dueDate && checkoutCount > 0 && (
+                  <p className="text-slate-600 text-lg mt-1">Return by {formatDate(dueDate)}</p>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-2 flex-1 overflow-y-auto">
+                {results.map((r, i) => (
+                  <div key={i} className={`flex items-center gap-3 rounded-xl px-4 py-3 ${r.ok ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                    <span className="text-xl">{r.ok ? '✓' : '✗'}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-slate-800 dark:text-white truncate">{r.name}</p>
+                      {!r.ok && <p className="text-red-600 text-sm">{r.error}</p>}
+                    </div>
+                    <span className={`text-sm font-bold px-2 py-0.5 rounded-full ${r.action === 'checkin' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                      {r.action === 'checkin' ? 'Returned' : 'Out'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-slate-400 dark:text-slate-500 text-center">Returning in {countdown}s...</p>
+              <button
+                onClick={resetToScanning}
+                className="w-full bg-slate-600 hover:bg-slate-500 dark:bg-slate-700 dark:hover:bg-slate-600 text-white py-5 rounded-2xl text-2xl font-bold transition-colors"
+              >
+                Scan More
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {showTour && (
+        <KioskTour
+          onDone={() => {
+            localStorage.setItem('kioskTourDone', '1');
+            setShowTour(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}

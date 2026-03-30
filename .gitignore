@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Production build
+frontend/dist/
+
+# Sensitive config (contains API tokens and passwords)
+backend/config.json
+
+# Camera snapshots
+backend/snapshots/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,25 @@
+{
+  "snipeItUrl": "http://your-snipeit-instance.example.com",
+  "snipeItToken": "YOUR_SNIPEIT_ADMIN_API_TOKEN",
+  "cameraStreamUrl": "",
+  "cameraSnapshotUrl": "",
+  "cameraUsername": "",
+  "cameraPassword": "",
+  "cameraType": "webcam",
+  "acsEnabled": false,
+  "acsUrl": "https://your-acs-server:29204",
+  "acsUsername": "administrator",
+  "acsPassword": "YOUR_ACS_PASSWORD",
+  "acsSourceKey": "YOUR_ACS_SOURCE_KEY",
+  "adminPin": "1234",
+  "adminUsers": [
+    "your_snipeit_username"
+  ],
+  "durationPresets": [
+    { "label": "1 Hour", "hours": 1 },
+    { "label": "Half Day", "hours": 4 },
+    { "label": "1 Day", "hours": 24 },
+    { "label": "1 Week", "hours": 168, "default": true }
+  ],
+  "kioskBaseUrl": "http://YOUR_SERVER_IP:3001"
+}

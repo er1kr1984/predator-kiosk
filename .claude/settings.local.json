@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(python:*)",
+      "Bash(npm run:*)",
+      "Bash(cmd /c \"cd C:\\\\Users\\\\erikr\\\\claude\\\\predator\\\\frontend && npm run build\" 2>&1)",
+      "Bash(cmd /c \"cd C:\\\\Users\\\\erikr\\\\claude\\\\predator\\\\frontend && npm run build 2>&1\")",
+      "Bash(powershell -Command \"Set-Location 'C:\\\\Users\\\\erikr\\\\claude\\\\predator\\\\frontend'; npm run build\" 2>&1)",
+      "Bash(powershell -Command \"& 'C:\\\\Program Files\\\\nodejs\\\\npm.cmd' --version\" 2>&1)",
+      "Bash(powershell -Command \"Set-Location 'C:\\\\Users\\\\erikr\\\\claude\\\\predator\\\\frontend'; & 'C:\\\\Program Files\\\\nodejs\\\\npm.cmd' run build\" 2>&1)",
+      "Bash(powershell -Command \"\nGet-Command ssh, scp, plink, pscp 2>&1 | Select-Object Name, Source\n\" 2>&1)",
+      "Bash(powershell -Command \"\n\\\\$output = & 'C:\\\\Program Files\\\\PuTTY\\\\plink.exe' -pw 'Sw3d3n1984' -batch erikr@172.25.192.27 'uname -a' 2>&1\nWrite-Output \\\\$output\n\" 2>&1)",
+      "Bash(powershell -Command \"\n& 'C:\\\\Program Files\\\\PuTTY\\\\plink.exe' -pw 'Sw3d3n1984' -hostkey 'SHA256:N6VTcGoKaAjM9eVedBcRiAEnmpdTW3EXU4ZYHclX7Ls' erikr@172.25.192.27 'echo Sw3d3n1984 | sudo -S bash -c \\\\\"curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get install -y nodejs\\\\\" 2>&1 | tail -10' 2>&1\n\" 2>&1)",
+      "Bash(powershell -Command \"\n& 'C:\\\\Program Files\\\\PuTTY\\\\plink.exe' -pw 'Sw3d3n1984' -hostkey 'SHA256:N6VTcGoKaAjM9eVedBcRiAEnmpdTW3EXU4ZYHclX7Ls' erikr@172.25.192.27 '\ncurl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash\nexport NVM_DIR=\\\\\"\\\\$HOME/.nvm\\\\\"\n[ -s \\\\\"\\\\$NVM_DIR/nvm.sh\\\\\" ] && . \\\\\"\\\\$NVM_DIR/nvm.sh\\\\\"\nnvm install 20\nnvm use 20\nnode --version\n' 2>&1\n\" 2>&1)",
+      "Bash(powershell -Command \"\n& 'C:\\\\Program Files\\\\PuTTY\\\\plink.exe' -pw 'Sw3d3n1984' -hostkey 'SHA256:N6VTcGoKaAjM9eVedBcRiAEnmpdTW3EXU4ZYHclX7Ls' erikr@172.25.192.27 '\nexport NVM_DIR=\\\\\"\\\\$HOME/.nvm\\\\\"\n[ -s \\\\\"\\\\$NVM_DIR/nvm.sh\\\\\" ] && . \\\\\"\\\\$NVM_DIR/nvm.sh\\\\\"\nnvm install 20\nnode --version\n' 2>&1\n\" 2>&1)",
+      "Bash(ssh -V)",
+      "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o BatchMode=yes erikr@172.25.192.27 \"echo connected && uname -a && whoami\")",
+      "Bash(python3 -c \"import paramiko; print\\(''paramiko ok''\\)\")",
+      "Bash(pip install:*)",
+      "Bash(pip3 install:*)",
+      "Bash(pip show:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
