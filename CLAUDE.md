@@ -24,8 +24,10 @@ npm run build
 # Start production server
 npm start              # node backend/server.js (serves built frontend + API)
 
-# Deploy to production server (172.25.192.27) via SSH
-python deploy.py
+# Deploy to any server via SSH (prompts for password)
+python deploy.py <host> <user>
+# Example:
+python deploy.py 172.25.192.27 erikr
 ```
 
 There are no tests.
@@ -86,6 +88,7 @@ ACS `AddExternalData` payload uses `DataType: 'Text'` for all fields (Asset, Tag
 | `durationPresets` | Checkout duration options shown in kiosk UI |
 
 ## Production
-- Runs on `172.25.192.27:3001` via PM2 (`pm2 restart predator-kiosk`)
-- `deploy.py` uses paramiko to SSH, upload files (skipping `node_modules`, `dist`), `npm install`, `npm run build`, then restart PM2
-- Port 3001 must be open in UFW
+- Express runs on `localhost:3001` via PM2; nginx reverse-proxies HTTPS 443 → 3001
+- Port 3001 is blocked externally; only 80 (redirect) and 443 (HTTPS) are open
+- `deploy.py <host> <user>` SSHs in, uploads files, builds frontend, sets up PM2 + nginx with a self-signed SSL cert
+- Self-signed cert lives at `/etc/ssl/predator-kiosk/cert.pem` — install into trusted roots to remove browser warning
