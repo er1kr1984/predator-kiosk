@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginUser } from '../api.js';
 import ThemeToggle from '../components/ThemeToggle.jsx';
+import { version } from '../../package.json';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -40,7 +41,10 @@ export default function LoginPage() {
     <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center p-6 transition-colors">
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6 sm:p-10 w-full max-w-md transition-colors">
         <div className="text-center mb-8">
-          <h1 className="text-5xl font-bold text-slate-800 dark:text-white">Store Room</h1>
+          <div className="inline-flex items-center justify-center bg-blue-600 text-white text-3xl font-extrabold tracking-widest rounded-xl px-5 py-2 mb-4 shadow">
+            E2E
+          </div>
+          <h1 className="text-4xl font-bold text-slate-800 dark:text-white">Storeroom Kiosk</h1>
           <p className="text-slate-500 dark:text-slate-400 text-xl mt-2">Sign in to continue</p>
         </div>
 
@@ -88,8 +92,9 @@ export default function LoginPage() {
         </form>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6 flex items-center gap-4">
         <ThemeToggle />
+        <span className="text-slate-400 dark:text-slate-500 text-sm">v{version}</span>
       </div>
     </div>
   );
