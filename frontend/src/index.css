@@ -1,5 +1,21 @@
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700;800&display=swap');
 
+@font-face {
+  font-family: 'Lubalin Graph';
+  src: url('/fonts/LubalinGraphECG-Book.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Lubalin Graph';
+  src: url('/fonts/LubalinGraphECG-Demi.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

@@ -101,7 +101,7 @@ export default function LoginPage() {
         <KioskIllustration />
 
         {/* Heading */}
-        <h1 className="text-center text-3xl font-bold text-slate-800 dark:text-white mb-8 leading-snug">
+        <h1 className="text-center text-3xl font-lubalin font-bold text-slate-800 dark:text-white mb-8 leading-snug">
           Sign in to Storeroom Kiosk<span className="text-brand">.</span>
         </h1>
 

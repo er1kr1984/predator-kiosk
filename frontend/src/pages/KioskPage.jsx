@@ -299,7 +299,7 @@ export default function KioskPage() {
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
           <span className="brand-badge flex-shrink-0">E2E</span>
-          <span className="text-white text-sm font-semibold hidden sm:inline">Storeroom Kiosk</span>
+          <span className="text-white text-sm font-lubalin font-semibold hidden sm:inline">Storeroom Kiosk</span>
           <span className="text-slate-500 text-xs hidden sm:inline flex-shrink-0">v{version}</span>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">

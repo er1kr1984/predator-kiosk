@@ -98,7 +98,7 @@ export default function AdminPage() {
       <div className="max-w-2xl mx-auto flex flex-col gap-6">
 
         <div className="flex items-center justify-between">
-          <h1 className="text-4xl font-bold text-slate-800 dark:text-white">Admin Settings</h1>
+          <h1 className="text-4xl font-lubalin font-bold text-slate-800 dark:text-white">Admin Settings</h1>
           <button
             onClick={() => navigate('/kiosk')}
             className={btnSecondary}

@@ -14,8 +14,8 @@ export default {
         },
       },
       fontFamily: {
-        // Open Sans as primary UI font (web-safe, in branding assets)
         sans: ['Open Sans', 'system-ui', '-apple-system', 'sans-serif'],
+        lubalin: ['Lubalin Graph', 'Georgia', 'serif'],
       },
     },
   },
