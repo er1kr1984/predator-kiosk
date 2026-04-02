@@ -12,6 +12,7 @@ import os
 import sys
 import getpass
 import time
+import subprocess
 
 REMOTE_DIR = '/opt/predator-kiosk'
 LOCAL_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -125,6 +126,18 @@ def main():
     sudo(client, password, f'chown {user}:{user} {REMOTE_DIR}')
 
     # ── Upload ─────────────────────────────────────────────────────────────────
+    # Write git version to .version file so server build can use it
+    try:
+        git_ver = subprocess.check_output(
+            ['git', 'describe', '--tags', '--always'], cwd=LOCAL_DIR
+        ).decode().strip().lstrip('v')
+    except Exception:
+        git_ver = 'dev'
+    version_file = os.path.join(LOCAL_DIR, 'frontend', '.version')
+    with open(version_file, 'w') as f:
+        f.write(git_ver)
+    print(f'  Version: {git_ver}')
+
     print('\n=== Uploading project files ===')
     upload_dir(sftp, os.path.join(LOCAL_DIR, 'backend'),  f'{REMOTE_DIR}/backend',  SKIP_DIRS)
     upload_dir(sftp, os.path.join(LOCAL_DIR, 'frontend'), f'{REMOTE_DIR}/frontend', SKIP_DIRS)
