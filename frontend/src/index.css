@@ -24,6 +24,20 @@ html, body, #root {
   height: 100%;
 }
 
+/* Fix browser autofill overriding text colour with blue */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #1e293b;
+  box-shadow: 0 0 0px 1000px transparent inset;
+  transition: background-color 5000s ease-in-out 0s;
+}
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #ffffff;
+}
+
 /* Hide the native browser password-reveal eye (Edge / Chrome) */
 input[type="password"]::-ms-reveal,
 input[type="password"]::-ms-clear {

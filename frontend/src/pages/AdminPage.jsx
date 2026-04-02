@@ -5,7 +5,7 @@ import { getAdminConfig, saveAdminConfig, testAcsConnection, setupAcsSource, ver
 function Section({ title, children }) {
   return (
     <div className="bg-white dark:bg-[#232323] rounded-2xl shadow-sm p-6 flex flex-col gap-4 transition-colors">
-      <h2 className="text-xl font-bold text-slate-700 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700 pb-3">{title}</h2>
+      <h2 className="text-xl font-lubalin font-bold text-slate-700 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700 pb-3">{title}</h2>
       {children}
     </div>
   );

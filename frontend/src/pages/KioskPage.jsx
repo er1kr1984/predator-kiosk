@@ -447,7 +447,7 @@ export default function KioskPage() {
           {state === STATES.SCANNING && (
             <>
               <div className="flex-1 overflow-y-auto p-3 sm:p-6 flex flex-col gap-3">
-                <h2 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center justify-between">
+                <h2 className="text-2xl font-lubalin font-bold text-slate-800 dark:text-white flex items-center justify-between">
                   Basket
                   {basket.length > 0 && (
                     <span className="bg-brand text-slate-900 text-base font-bold px-3 py-1 rounded-full">
@@ -640,7 +640,7 @@ export default function KioskPage() {
           {/* DURATION */}
           {state === STATES.DURATION && (
             <div className="flex-1 flex flex-col p-4 sm:p-8 gap-3 sm:gap-5 overflow-y-auto">
-              <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-white">How long do you need them?</h2>
+              <h2 className="text-2xl sm:text-3xl font-lubalin font-bold text-slate-800 dark:text-white">How long do you need them?</h2>
               <p className="text-slate-500 dark:text-slate-400 text-base">Applies to all {checkoutCount} item{checkoutCount !== 1 ? 's' : ''} being checked out.</p>
 
               <div className="grid grid-cols-2 gap-3">
@@ -722,7 +722,7 @@ export default function KioskPage() {
           {state === STATES.PROCESSING && (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
               <div className="text-6xl mb-6 animate-spin">⚙️</div>
-              <h2 className="text-3xl font-bold text-slate-600 dark:text-slate-300">Processing {basket.length} item{basket.length !== 1 ? 's' : ''}...</h2>
+              <h2 className="text-3xl font-lubalin font-bold text-slate-600 dark:text-slate-300">Processing {basket.length} item{basket.length !== 1 ? 's' : ''}...</h2>
             </div>
           )}
 
@@ -731,7 +731,7 @@ export default function KioskPage() {
             <div className="flex-1 flex flex-col p-4 sm:p-8 gap-3 sm:gap-4 overflow-y-auto">
               <div className="text-center">
                 <div className="text-6xl mb-3">✅</div>
-                <h2 className="text-3xl font-bold text-green-600 dark:text-green-400">Done!</h2>
+                <h2 className="text-3xl font-lubalin font-bold text-green-600 dark:text-green-400">Done!</h2>
                 {dueDate && checkoutCount > 0 && (
                   <p className="text-slate-500 dark:text-slate-400 text-lg mt-1">Return by {formatDate(dueDate)}</p>
                 )}
