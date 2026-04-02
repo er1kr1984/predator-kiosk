@@ -4,7 +4,7 @@ import { getPublicConfig, getAssetByTag, checkoutAsset, checkinAsset, uploadAsse
 import { useQRScanner } from '../hooks/useQRScanner.js';
 import KioskTour from '../components/KioskTour.jsx';
 import { useTheme } from '../ThemeContext.jsx';
-import { version } from '../../package.json';
+const version = __APP_VERSION__;
 
 function CogIcon() {
   return (

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginUser } from '../api.js';
-import { version } from '../../package.json';
+const version = __APP_VERSION__;
 import { useTheme } from '../ThemeContext.jsx';
 
 function EyeIcon() {
