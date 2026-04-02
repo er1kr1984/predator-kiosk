@@ -37,7 +37,10 @@ body {
   /* Text inputs */
   .input {
     @apply border-2 border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400
-           rounded-xl px-4 py-3 focus:border-brand focus:outline-none transition-colors;
+           rounded-xl px-4 py-3 focus:outline-none transition-colors;
+  }
+  .input:focus {
+    border-color: #F5B700; /* brand yellow */
   }
 
   /* Brand badge (the "E2E" pill) */
