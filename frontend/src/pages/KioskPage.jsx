@@ -264,7 +264,7 @@ export default function KioskPage() {
       <header className="bg-slate-700 dark:bg-slate-800 px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between flex-shrink-0 transition-colors gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-3 h-3 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
-          <span className="bg-blue-600 text-white text-xs font-extrabold tracking-widest rounded px-1.5 py-0.5 hidden sm:inline flex-shrink-0">E2E</span>
+          <span className="brand-badge hidden sm:inline flex-shrink-0">E2E</span>
           <span className="text-white text-base sm:text-lg font-semibold hidden sm:inline">Storeroom Kiosk</span>
           <span className="text-slate-400 text-xs hidden sm:inline flex-shrink-0">v{version}</span>
           <span className="text-slate-300 text-sm sm:text-lg truncate">

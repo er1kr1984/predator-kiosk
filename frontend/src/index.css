@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,5 +9,39 @@ html, body, #root {
 }
 
 body {
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: 'Open Sans', system-ui, -apple-system, sans-serif;
+}
+
+/* ── Reusable design-system component classes ─────────────────────────────── */
+@layer components {
+
+  /* Cards */
+  .card {
+    @apply bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm;
+  }
+  .card-body {
+    @apply p-6 sm:p-8;
+  }
+
+  /* Buttons */
+  .btn-primary {
+    @apply bg-brand hover:bg-brand-dark disabled:opacity-50 text-slate-900 font-bold rounded-xl transition-colors;
+  }
+  .btn-secondary {
+    @apply bg-slate-600 hover:bg-slate-500 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-semibold rounded-lg transition-colors;
+  }
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors;
+  }
+
+  /* Text inputs */
+  .input {
+    @apply border-2 border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400
+           rounded-xl px-4 py-3 focus:border-brand focus:outline-none transition-colors;
+  }
+
+  /* Brand badge (the "E2E" pill) */
+  .brand-badge {
+    @apply bg-brand text-slate-900 text-xs font-extrabold tracking-widest rounded px-1.5 py-0.5;
+  }
 }

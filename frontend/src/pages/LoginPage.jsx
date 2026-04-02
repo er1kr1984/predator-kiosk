@@ -41,7 +41,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center p-6 transition-colors">
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6 sm:p-10 w-full max-w-md transition-colors">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center bg-blue-600 text-white text-3xl font-extrabold tracking-widest rounded-xl px-5 py-2 mb-4 shadow">
+          <div className="inline-flex items-center justify-center bg-brand text-slate-900 text-3xl font-extrabold tracking-widest rounded-xl px-5 py-2 mb-4 shadow">
             E2E
           </div>
           <h1 className="text-4xl font-bold text-slate-800 dark:text-white">Storeroom Kiosk</h1>
@@ -55,7 +55,7 @@ export default function LoginPage() {
               ref={usernameRef}
               type="text"
               autoComplete="off"
-              className="border-2 border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl px-5 py-4 text-2xl focus:border-blue-500 focus:outline-none transition-colors"
+              className="border-2 border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl px-5 py-4 text-2xl focus:border-brand focus:outline-none transition-colors"
               placeholder="Your Snipe-IT username"
               value={username}
               onChange={(e) => { setUsername(e.target.value); setError(''); }}
@@ -68,7 +68,7 @@ export default function LoginPage() {
             <input
               type="password"
               autoComplete="new-password"
-              className="border-2 border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl px-5 py-4 text-2xl focus:border-blue-500 focus:outline-none transition-colors"
+              className="border-2 border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl px-5 py-4 text-2xl focus:border-brand focus:outline-none transition-colors"
               placeholder="••••••••"
               value={password}
               onChange={(e) => { setPassword(e.target.value); setError(''); }}
@@ -85,7 +85,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={!username.trim() || !password || loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white py-5 rounded-2xl text-2xl font-bold transition-colors mt-2"
+            className="w-full bg-brand hover:bg-brand-dark disabled:opacity-50 text-slate-900 py-5 rounded-2xl text-2xl font-bold transition-colors mt-2"
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
