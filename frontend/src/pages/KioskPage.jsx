@@ -295,32 +295,24 @@ export default function KioskPage() {
   return (
     <div className="h-screen bg-slate-100 dark:bg-[#2a2a2a] flex flex-col overflow-hidden transition-colors">
       {/* Header — stays dark in both modes */}
-      <header className="bg-[#1e1e1e] px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between flex-shrink-0 gap-2">
+      <header className="bg-[#1e1e1e] px-3 sm:px-5 py-2 flex items-center justify-between flex-shrink-0 gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-3 h-3 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
-          <span className="brand-badge hidden sm:inline flex-shrink-0">E2E</span>
-          <span className="text-white text-base sm:text-lg font-semibold hidden sm:inline">Storeroom Kiosk</span>
+          <div className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
+          <span className="brand-badge flex-shrink-0">E2E</span>
+          <span className="text-white text-sm font-semibold hidden sm:inline">Storeroom Kiosk</span>
           <span className="text-slate-500 text-xs hidden sm:inline flex-shrink-0">v{version}</span>
         </div>
-        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           <button
             onClick={() => setShowTour(true)}
-            className="bg-[#363636] hover:bg-[#484848] text-slate-400 hover:text-white w-8 h-8 sm:w-9 sm:h-9 rounded-lg text-sm sm:text-base font-bold transition-colors flex items-center justify-center"
+            className="bg-[#363636] hover:bg-[#484848] text-slate-400 hover:text-white w-7 h-7 rounded-md text-xs font-bold transition-colors flex items-center justify-center"
             title="Help"
           >
             ?
           </button>
-          {isAdmin && (
-            <button
-              onClick={() => navigate('/admin')}
-              className="bg-[#363636] hover:bg-[#484848] text-slate-300 hover:text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-sm sm:text-base transition-colors"
-            >
-              Admin
-            </button>
-          )}
           <button
             onClick={() => { sessionStorage.removeItem('kioskUser'); sessionStorage.removeItem('kioskIsAdmin'); navigate('/'); }}
-            className="bg-[#363636] hover:bg-[#484848] text-slate-300 hover:text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-sm sm:text-base transition-colors"
+            className="bg-[#363636] hover:bg-[#484848] text-slate-300 hover:text-white px-2.5 py-1 rounded-md text-xs transition-colors"
           >
             Sign Out
           </button>
@@ -329,7 +321,7 @@ export default function KioskPage() {
           <div className="relative" ref={settingsRef}>
             <button
               onClick={() => setShowSettings(v => !v)}
-              className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center transition-colors ${showSettings ? 'bg-[#484848] text-white' : 'bg-[#363636] hover:bg-[#484848] text-slate-400 hover:text-white'}`}
+              className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${showSettings ? 'bg-[#484848] text-white' : 'bg-[#363636] hover:bg-[#484848] text-slate-400 hover:text-white'}`}
               title="Settings"
             >
               <CogIcon />
@@ -343,7 +335,7 @@ export default function KioskPage() {
                   <p className="text-white font-semibold truncate">{user.name || user.username}</p>
                 </div>
                 {/* Theme */}
-                <div className="px-4 py-3">
+                <div className="px-4 py-3 border-b border-slate-700">
                   <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold mb-2">Theme</p>
                   <button
                     onClick={toggleTheme}
@@ -353,6 +345,21 @@ export default function KioskPage() {
                     {theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'}
                   </button>
                 </div>
+                {/* Admin */}
+                {isAdmin && (
+                  <div className="px-4 py-3">
+                    <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold mb-2">Administration</p>
+                    <button
+                      onClick={() => { setShowSettings(false); navigate('/admin'); }}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg bg-[#2a2a2a] hover:bg-[#363636] text-slate-300 hover:text-white transition-colors text-sm font-medium"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                      </svg>
+                      Admin Settings
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
