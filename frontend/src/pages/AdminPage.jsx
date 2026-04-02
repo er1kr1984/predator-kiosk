@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAdminConfig, saveAdminConfig, testAcsConnection, setupAcsSource, verifyAcsSource, probeAcsFields, getActivityLog } from '../api.js';
-import ThemeToggle from '../components/ThemeToggle.jsx';
 
 function Section({ title, children }) {
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow p-6 flex flex-col gap-4 transition-colors">
+    <div className="bg-white dark:bg-[#232323] rounded-2xl shadow-sm p-6 flex flex-col gap-4 transition-colors">
       <h2 className="text-xl font-bold text-slate-700 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700 pb-3">{title}</h2>
       {children}
     </div>
@@ -22,7 +21,8 @@ function Field({ label, hint, children }) {
   );
 }
 
-const inputCls = 'border-2 border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl px-4 py-3 text-lg focus:border-blue-500 focus:outline-none w-full transition-colors';
+const inputCls = 'bg-white dark:bg-[#2f2f2f] border-2 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl px-4 py-3 text-lg focus:border-brand focus:outline-none w-full transition-colors';
+const btnSecondary = 'bg-slate-100 hover:bg-slate-200 dark:bg-[#363636] dark:hover:bg-[#484848] text-slate-700 dark:text-slate-300 px-5 py-3 rounded-xl text-base font-semibold transition-colors';
 
 export default function AdminPage() {
   const navigate = useNavigate();
@@ -88,26 +88,23 @@ export default function AdminPage() {
   };
 
   if (!form) return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex items-center justify-center transition-colors">
+    <div className="min-h-screen bg-slate-100 dark:bg-[#2a2a2a] flex items-center justify-center transition-colors">
       <p className="text-slate-500 dark:text-slate-400 text-xl">{error || 'Loading...'}</p>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-900 p-6 transition-colors">
+    <div className="min-h-screen bg-slate-100 dark:bg-[#2a2a2a] p-6 transition-colors">
       <div className="max-w-2xl mx-auto flex flex-col gap-6">
 
         <div className="flex items-center justify-between">
           <h1 className="text-4xl font-bold text-slate-800 dark:text-white">Admin Settings</h1>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            <button
-              onClick={() => navigate('/kiosk')}
-              className="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-5 py-3 rounded-xl text-lg transition-colors"
-            >
-              Back to Kiosk
-            </button>
-          </div>
+          <button
+            onClick={() => navigate('/kiosk')}
+            className={btnSecondary}
+          >
+            ← Back to Kiosk
+          </button>
         </div>
 
         {/* Snipe-IT */}
@@ -161,17 +158,17 @@ export default function AdminPage() {
           <p className="text-slate-500 dark:text-slate-400 text-sm">Mark one as default (pre-selected on the kiosk).</p>
           <div className="flex flex-col gap-3">
             {form.durationPresets.map((preset, i) => (
-              <div key={i} className="flex items-center gap-3 bg-slate-50 dark:bg-slate-700 rounded-xl p-3 border border-slate-200 dark:border-slate-600">
+              <div key={i} className="flex items-center gap-3 bg-slate-50 dark:bg-[#2f2f2f] rounded-xl p-3 border border-slate-200 dark:border-slate-700">
                 <input type="text"
-                  className="flex-1 border border-slate-300 dark:border-slate-500 dark:bg-slate-600 dark:text-white rounded-lg px-3 py-2 text-base focus:outline-none focus:border-blue-400"
+                  className="flex-1 bg-white dark:bg-[#363636] border border-slate-200 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-base focus:outline-none focus:border-brand transition-colors"
                   value={preset.label} onChange={(e) => updatePreset(i, 'label', e.target.value)} placeholder="Label" />
                 <input type="number" min="1"
-                  className="w-24 border border-slate-300 dark:border-slate-500 dark:bg-slate-600 dark:text-white rounded-lg px-3 py-2 text-base focus:outline-none focus:border-blue-400"
+                  className="w-24 bg-white dark:bg-[#363636] border border-slate-200 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-base focus:outline-none focus:border-brand transition-colors"
                   value={preset.hours} onChange={(e) => updatePreset(i, 'hours', e.target.value)} />
-                <span className="text-slate-400 dark:text-slate-400 text-sm">hrs</span>
+                <span className="text-slate-400 text-sm">hrs</span>
                 <label className="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-300 cursor-pointer whitespace-nowrap">
                   <input type="radio" name="defaultPreset" checked={!!preset.default}
-                    onChange={() => updatePreset(i, 'default', true)} className="accent-blue-600" />
+                    onChange={() => updatePreset(i, 'default', true)} className="accent-brand" />
                   Default
                 </label>
                 <button onClick={() => removePreset(i)} className="text-red-400 hover:text-red-500 text-xl font-bold px-1 transition-colors">×</button>
@@ -179,7 +176,7 @@ export default function AdminPage() {
             ))}
           </div>
           <button onClick={addPreset}
-            className="border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-500 text-slate-500 dark:text-slate-400 hover:text-blue-500 py-3 rounded-xl text-lg transition-colors">
+            className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-brand text-slate-400 dark:text-slate-500 hover:text-brand py-3 rounded-xl text-lg transition-colors">
             + Add Preset
           </button>
         </Section>
@@ -193,7 +190,7 @@ export default function AdminPage() {
           <label className="flex items-center gap-3 cursor-pointer">
             <div
               onClick={() => set('acsEnabled', !form.acsEnabled)}
-              className={`w-12 h-6 rounded-full transition-colors relative ${form.acsEnabled ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'}`}
+              className={`w-12 h-6 rounded-full transition-colors relative ${form.acsEnabled ? 'bg-brand' : 'bg-slate-300 dark:bg-slate-600'}`}
             >
               <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${form.acsEnabled ? 'translate-x-7' : 'translate-x-1'}`} />
             </div>
@@ -225,7 +222,6 @@ export default function AdminPage() {
               placeholder="predator-store-room" />
           </Field>
 
-          {/* Manual setup instructions */}
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-4 text-sm text-amber-800 dark:text-amber-300">
             <p className="font-semibold mb-1">One-time setup required in ACS Pro client:</p>
             <ol className="list-decimal list-inside space-y-1">
@@ -249,7 +245,7 @@ export default function AdminPage() {
                   setAcsTestStatus(err?.error + (err?.detail ? ` — ${JSON.stringify(err.detail)}` : '') || 'Connection failed');
                 }
               }}
-              className="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-5 py-3 rounded-xl text-base font-semibold transition-colors"
+              className={btnSecondary}
             >
               Test Connection
             </button>
@@ -265,7 +261,7 @@ export default function AdminPage() {
                   setAcsSetupStatus(`Source not found or not accessible: ${err?.detail?.Message || err?.error || e.message}`);
                 }
               }}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl text-base font-semibold transition-colors"
+              className={btnSecondary}
             >
               Verify Connection
             </button>
@@ -280,7 +276,7 @@ export default function AdminPage() {
                   setAcsProbeResults([{ label: 'error', error: e.message }]);
                 }
               }}
-              className="bg-amber-500 hover:bg-amber-600 text-white px-5 py-3 rounded-xl text-base font-semibold transition-colors"
+              className={btnSecondary}
             >
               Probe Field Names
             </button>
@@ -299,7 +295,7 @@ export default function AdminPage() {
             <p className="text-sm text-slate-500 dark:text-slate-400">{acsProbeResults}</p>
           )}
           {acsProbeResults && Array.isArray(acsProbeResults) && (
-            <div className="bg-slate-900 dark:bg-slate-950 rounded-xl p-4 text-xs font-mono text-slate-300 overflow-auto max-h-64">
+            <div className="bg-slate-900 dark:bg-[#111] rounded-xl p-4 text-xs font-mono text-slate-300 overflow-auto max-h-64">
               {acsProbeResults.map((r, i) => (
                 <div key={i} className={`mb-2 ${r.status < 300 ? 'text-green-400' : 'text-red-400'}`}>
                   <span className="font-bold">[{r.label}]</span> status={r.status ?? 'err'} — {r.error || JSON.stringify(r.response)}
@@ -316,11 +312,11 @@ export default function AdminPage() {
           </p>
           <div className="flex flex-col gap-2">
             {(form.adminUsers || []).map((u) => (
-              <div key={u} className="flex items-center justify-between bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3">
+              <div key={u} className="flex items-center justify-between bg-slate-50 dark:bg-[#2f2f2f] border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3">
                 <span className="text-lg font-mono text-slate-700 dark:text-slate-200">{u}</span>
                 <div className="flex items-center gap-2">
                   {u.toLowerCase() === adminUsername.toLowerCase() && (
-                    <span className="text-xs text-blue-600 dark:text-blue-400 font-semibold bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">You</span>
+                    <span className="text-xs text-slate-700 font-semibold bg-brand-light px-2 py-0.5 rounded-full">You</span>
                   )}
                   <button
                     onClick={() => removeAdminUser(u)}
@@ -333,14 +329,14 @@ export default function AdminPage() {
           </div>
           <div className="flex gap-2">
             <input type="text"
-              className="flex-1 border-2 border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl px-4 py-3 text-lg focus:border-blue-500 focus:outline-none transition-colors"
+              className="flex-1 bg-white dark:bg-[#2f2f2f] border-2 border-slate-200 dark:border-slate-700 dark:text-white rounded-xl px-4 py-3 text-lg focus:border-brand focus:outline-none transition-colors"
               placeholder="Snipe-IT username"
               value={newAdminUser}
               onChange={(e) => setNewAdminUser(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addAdminUser()}
             />
             <button onClick={addAdminUser} disabled={!newAdminUser.trim()}
-              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-5 py-3 rounded-xl text-lg font-semibold transition-colors">
+              className="bg-brand hover:bg-brand-dark disabled:opacity-50 text-slate-900 px-5 py-3 rounded-xl text-lg font-semibold transition-colors">
               Add
             </button>
           </div>
@@ -365,7 +361,7 @@ export default function AdminPage() {
               }
             }}
             disabled={activityLoading}
-            className="self-start bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-5 py-3 rounded-xl text-base font-semibold transition-colors disabled:opacity-50"
+            className={`self-start ${btnSecondary} disabled:opacity-50`}
           >
             {activityLoading ? 'Loading...' : activityLog ? 'Refresh' : 'Load Activity'}
           </button>
@@ -379,7 +375,7 @@ export default function AdminPage() {
             <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-slate-100 dark:bg-slate-700 text-left text-slate-600 dark:text-slate-300">
+                  <tr className="bg-slate-100 dark:bg-[#2f2f2f] text-left text-slate-600 dark:text-slate-300">
                     <th className="px-4 py-2 font-semibold">When</th>
                     <th className="px-4 py-2 font-semibold">Action</th>
                     <th className="px-4 py-2 font-semibold">Asset</th>
@@ -392,7 +388,7 @@ export default function AdminPage() {
                     const isOut = row.action_type?.toLowerCase().includes('checkout');
                     const isIn = row.action_type?.toLowerCase().includes('checkin');
                     return (
-                      <tr key={row.id ?? i} className="border-t border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                      <tr key={row.id ?? i} className="border-t border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-[#2f2f2f]/60">
                         <td className="px-4 py-2 whitespace-nowrap text-slate-500 dark:text-slate-400">
                           {row.created_at?.datetime
                             ? new Date(row.created_at.datetime).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
@@ -400,7 +396,7 @@ export default function AdminPage() {
                         </td>
                         <td className="px-4 py-2 whitespace-nowrap">
                           <span className={`font-semibold px-2 py-0.5 rounded-full text-xs ${
-                            isOut ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'
+                            isOut ? 'bg-brand-light/40 text-slate-700 dark:bg-brand-light/20 dark:text-brand'
                             : isIn ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
                             : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
                           }`}>
@@ -430,7 +426,7 @@ export default function AdminPage() {
           {error && <p className="text-red-500 dark:text-red-400 text-lg text-center">{error}</p>}
           {saved && <p className="text-green-600 dark:text-green-400 text-lg text-center font-semibold">Settings saved!</p>}
           <button onClick={handleSave} disabled={saving}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white py-5 rounded-2xl text-2xl font-bold transition-colors">
+            className="w-full bg-brand hover:bg-brand-dark disabled:opacity-50 text-slate-900 py-5 rounded-2xl text-2xl font-bold transition-colors">
             {saving ? 'Saving...' : 'Save Settings'}
           </button>
         </div>
