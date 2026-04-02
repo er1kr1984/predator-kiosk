@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginUser } from '../api.js';
 import { version } from '../../package.json';
+import { useTheme } from '../ThemeContext.jsx';
 
 function EyeIcon() {
   return (
@@ -20,25 +21,37 @@ function EyeOffIcon() {
   );
 }
 
+function SunIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 5a7 7 0 100 14A7 7 0 0012 5z" />
+    </svg>
+  );
+}
+
+function MoonIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z" />
+    </svg>
+  );
+}
+
 function KioskIllustration() {
   return (
     <div className="flex justify-center mb-10">
       <div className="relative">
-        {/* Decorative side dots */}
-        <div className="absolute -left-4 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[#3a3a3a]" />
-        <div className="absolute -right-4 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[#3a3a3a]" />
-        {/* Card */}
-        <div className="bg-[#363636] rounded-2xl px-8 py-6 flex flex-col items-center gap-3">
-          {/* Person icon */}
+        <div className="absolute -left-4 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-slate-300 dark:bg-[#3a3a3a]" />
+        <div className="absolute -right-4 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-slate-300 dark:bg-[#3a3a3a]" />
+        <div className="bg-slate-200 dark:bg-[#363636] rounded-2xl px-8 py-6 flex flex-col items-center gap-3">
           <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-            <circle cx="18" cy="12" r="7" fill="#5a5a5a" />
-            <path d="M4 30c0-7.732 6.268-14 14-14s14 6.268 14 14" stroke="#5a5a5a" strokeWidth="3" strokeLinecap="round" />
+            <circle cx="18" cy="12" r="7" className="fill-slate-400 dark:fill-[#5a5a5a]" />
+            <path d="M4 30c0-7.732 6.268-14 14-14s14 6.268 14 14" className="stroke-slate-400 dark:stroke-[#5a5a5a]" strokeWidth="3" strokeLinecap="round" />
           </svg>
-          {/* Form lines */}
           <div className="flex flex-col gap-2 w-28">
-            <div className="h-2 bg-[#5a5a5a] rounded-full" />
-            <div className="h-2 bg-[#4a4a4a] rounded-full w-4/5" />
-            <div className="h-2 bg-[#404040] rounded-full w-3/5 mt-1" />
+            <div className="h-2 bg-slate-300 dark:bg-[#5a5a5a] rounded-full" />
+            <div className="h-2 bg-slate-300 dark:bg-[#4a4a4a] rounded-full w-4/5" />
+            <div className="h-2 bg-slate-200 dark:bg-[#404040] rounded-full w-3/5 mt-1" />
           </div>
         </div>
       </div>
@@ -54,6 +67,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const usernameRef = useRef(null);
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     setUsername('');
@@ -81,14 +95,23 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#2a2a2a] flex flex-col items-center justify-center p-6">
+    <div className="relative min-h-screen bg-slate-100 dark:bg-[#2a2a2a] flex flex-col items-center justify-center p-6 transition-colors">
+
+      {/* Theme toggle — top right */}
+      <button
+        onClick={toggleTheme}
+        title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+        className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-200 dark:hover:bg-[#363636] transition-colors"
+      >
+        {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+      </button>
 
       <div className="w-full max-w-sm">
 
         <KioskIllustration />
 
         {/* Heading */}
-        <h1 className="text-center text-3xl font-bold text-white mb-8 leading-snug">
+        <h1 className="text-center text-3xl font-bold text-slate-800 dark:text-white mb-8 leading-snug">
           Sign in to Storeroom Kiosk<span className="text-brand">.</span>
         </h1>
 
@@ -97,13 +120,13 @@ export default function LoginPage() {
 
           {/* Username */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-slate-400 font-medium">Username</label>
+            <label className="text-sm text-slate-500 dark:text-slate-400 font-medium">Username</label>
             <input
               ref={usernameRef}
               type="text"
               autoComplete="off"
               style={{ caretColor: '#F5B700' }}
-              className="bg-transparent border-b-2 border-slate-600 focus:border-brand text-white text-xl py-2 focus:outline-none transition-colors placeholder-slate-700"
+              className="bg-transparent border-b-2 border-slate-300 dark:border-slate-600 focus:border-brand text-slate-800 dark:text-white text-xl py-2 focus:outline-none transition-colors placeholder-slate-300 dark:placeholder-slate-700"
               placeholder="your.username"
               value={username}
               onChange={(e) => { setUsername(e.target.value); setError(''); }}
@@ -113,13 +136,13 @@ export default function LoginPage() {
 
           {/* Password */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-slate-400 font-medium">Password</label>
+            <label className="text-sm text-slate-500 dark:text-slate-400 font-medium">Password</label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
                 autoComplete="new-password"
                 style={{ caretColor: '#F5B700' }}
-                className="bg-transparent border-b-2 border-slate-600 focus:border-brand text-white text-xl py-2 w-full focus:outline-none transition-colors placeholder-slate-700 pr-10"
+                className="bg-transparent border-b-2 border-slate-300 dark:border-slate-600 focus:border-brand text-slate-800 dark:text-white text-xl py-2 w-full focus:outline-none transition-colors placeholder-slate-300 dark:placeholder-slate-700 pr-10"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setError(''); }}
@@ -128,7 +151,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(v => !v)}
-                className="absolute right-0 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                className="absolute right-0 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
                 tabIndex={-1}
               >
                 {showPassword ? <EyeOffIcon /> : <EyeIcon />}
@@ -138,7 +161,7 @@ export default function LoginPage() {
 
           {/* Error */}
           {error && (
-            <p className="text-red-400 text-sm text-center -mt-2">{error}</p>
+            <p className="text-red-500 dark:text-red-400 text-sm text-center -mt-2">{error}</p>
           )}
 
           {/* Submit */}
@@ -154,7 +177,7 @@ export default function LoginPage() {
       </div>
 
       {/* Footer */}
-      <div className="mt-16 flex items-center gap-3 text-slate-600 text-xs">
+      <div className="mt-16 flex items-center gap-3 text-slate-400 dark:text-slate-600 text-xs">
         <span className="brand-badge">E2E</span>
         <span>Storeroom Kiosk v{version}</span>
       </div>

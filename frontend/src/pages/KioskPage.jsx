@@ -2,9 +2,34 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getPublicConfig, getAssetByTag, checkoutAsset, checkinAsset, uploadAssetImage, getUserCheckouts } from '../api.js';
 import { useQRScanner } from '../hooks/useQRScanner.js';
-import ThemeToggle from '../components/ThemeToggle.jsx';
 import KioskTour from '../components/KioskTour.jsx';
+import { useTheme } from '../ThemeContext.jsx';
 import { version } from '../../package.json';
+
+function CogIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  );
+}
+
+function SunIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 5a7 7 0 100 14A7 7 0 0012 5z" />
+    </svg>
+  );
+}
+
+function MoonIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z" />
+    </svg>
+  );
+}
 
 const STATES = {
   SCANNING: 'SCANNING',
@@ -72,8 +97,11 @@ export default function KioskPage() {
   const [imageUploading, setImageUploading] = useState({});
   const [imageMsg, setImageMsg] = useState({});
   const [idleSecondsLeft, setIdleSecondsLeft] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const settingsRef = useRef(null);
   const idleTimerRef = useRef(null);
   const idleCountdownRef = useRef(null);
+  const { theme, toggleTheme } = useTheme();
   const IDLE_TIMEOUT = 300;
   const IDLE_WARN_AT = 10;
 
@@ -141,6 +169,16 @@ export default function KioskPage() {
       }, 1000);
     }, (IDLE_TIMEOUT - IDLE_WARN_AT) * 1000);
   }, [navigate]);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (settingsRef.current && !settingsRef.current.contains(e.target)) {
+        setShowSettings(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'];
@@ -263,13 +301,8 @@ export default function KioskPage() {
           <span className="brand-badge hidden sm:inline flex-shrink-0">E2E</span>
           <span className="text-white text-base sm:text-lg font-semibold hidden sm:inline">Storeroom Kiosk</span>
           <span className="text-slate-500 text-xs hidden sm:inline flex-shrink-0">v{version}</span>
-          <span className="text-slate-400 text-sm sm:text-lg truncate">
-            <span className="hidden sm:inline">Signed in as </span>
-            <span className="text-white font-semibold">{user.name || user.username}</span>
-          </span>
         </div>
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-          <ThemeToggle />
           <button
             onClick={() => setShowTour(true)}
             className="bg-[#363636] hover:bg-[#484848] text-slate-400 hover:text-white w-8 h-8 sm:w-9 sm:h-9 rounded-lg text-sm sm:text-base font-bold transition-colors flex items-center justify-center"
@@ -291,6 +324,38 @@ export default function KioskPage() {
           >
             Sign Out
           </button>
+
+          {/* Settings cog */}
+          <div className="relative" ref={settingsRef}>
+            <button
+              onClick={() => setShowSettings(v => !v)}
+              className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center transition-colors ${showSettings ? 'bg-[#484848] text-white' : 'bg-[#363636] hover:bg-[#484848] text-slate-400 hover:text-white'}`}
+              title="Settings"
+            >
+              <CogIcon />
+            </button>
+
+            {showSettings && (
+              <div className="absolute right-0 top-full mt-2 w-56 bg-[#1a1a1a] border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden">
+                {/* User info */}
+                <div className="px-4 py-3 border-b border-slate-700">
+                  <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold mb-1">Signed in as</p>
+                  <p className="text-white font-semibold truncate">{user.name || user.username}</p>
+                </div>
+                {/* Theme */}
+                <div className="px-4 py-3">
+                  <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold mb-2">Theme</p>
+                  <button
+                    onClick={toggleTheme}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg bg-[#2a2a2a] hover:bg-[#363636] text-slate-300 hover:text-white transition-colors text-sm font-medium"
+                  >
+                    {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+                    {theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
