@@ -40,21 +40,11 @@ function MoonIcon() {
 function KioskIllustration() {
   return (
     <div className="flex justify-center mb-10">
-      <div className="relative">
-        <div className="absolute -left-4 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-slate-300 dark:bg-[#3a3a3a]" />
-        <div className="absolute -right-4 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-slate-300 dark:bg-[#3a3a3a]" />
-        <div className="bg-slate-200 dark:bg-[#363636] rounded-2xl px-8 py-6 flex flex-col items-center gap-3">
-          <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-            <circle cx="18" cy="12" r="7" className="fill-slate-400 dark:fill-[#5a5a5a]" />
-            <path d="M4 30c0-7.732 6.268-14 14-14s14 6.268 14 14" className="stroke-slate-400 dark:stroke-[#5a5a5a]" strokeWidth="3" strokeLinecap="round" />
-          </svg>
-          <div className="flex flex-col gap-2 w-28">
-            <div className="h-2 bg-slate-300 dark:bg-[#5a5a5a] rounded-full" />
-            <div className="h-2 bg-slate-300 dark:bg-[#4a4a4a] rounded-full w-4/5" />
-            <div className="h-2 bg-slate-200 dark:bg-[#404040] rounded-full w-3/5 mt-1" />
-          </div>
-        </div>
-      </div>
+      <img
+        src="/storeroom_icon.png"
+        alt="Storeroom"
+        className="w-56 h-auto opacity-90"
+      />
     </div>
   );
 }
