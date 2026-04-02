@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getPublicConfig, getAssetByTag, checkoutAsset, checkinAsset, uploadAssetImage, getUserCheckouts } from '../api.js';
 import { useQRScanner } from '../hooks/useQRScanner.js';
+import ThemeToggle from '../components/ThemeToggle.jsx';
 import KioskTour from '../components/KioskTour.jsx';
 import { version } from '../../package.json';
 
@@ -254,8 +255,8 @@ export default function KioskPage() {
   const presets = config?.durationPresets || [];
 
   return (
-    <div className="h-screen bg-[#2a2a2a] flex flex-col overflow-hidden">
-      {/* Header */}
+    <div className="h-screen bg-slate-100 dark:bg-[#2a2a2a] flex flex-col overflow-hidden transition-colors">
+      {/* Header — stays dark in both modes */}
       <header className="bg-[#1e1e1e] px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between flex-shrink-0 gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-3 h-3 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
@@ -268,9 +269,10 @@ export default function KioskPage() {
           </span>
         </div>
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+          <ThemeToggle />
           <button
             onClick={() => setShowTour(true)}
-            className="bg-[#363636] hover:bg-[#404040] text-slate-400 hover:text-white w-8 h-8 sm:w-9 sm:h-9 rounded-lg text-sm sm:text-base font-bold transition-colors flex items-center justify-center"
+            className="bg-[#363636] hover:bg-[#484848] text-slate-400 hover:text-white w-8 h-8 sm:w-9 sm:h-9 rounded-lg text-sm sm:text-base font-bold transition-colors flex items-center justify-center"
             title="Help"
           >
             ?
@@ -278,14 +280,14 @@ export default function KioskPage() {
           {isAdmin && (
             <button
               onClick={() => navigate('/admin')}
-              className="bg-[#363636] hover:bg-[#404040] text-slate-300 hover:text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-sm sm:text-base transition-colors"
+              className="bg-[#363636] hover:bg-[#484848] text-slate-300 hover:text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-sm sm:text-base transition-colors"
             >
               Admin
             </button>
           )}
           <button
             onClick={() => { sessionStorage.removeItem('kioskUser'); sessionStorage.removeItem('kioskIsAdmin'); navigate('/'); }}
-            className="bg-[#363636] hover:bg-[#404040] text-slate-300 hover:text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-sm sm:text-base transition-colors"
+            className="bg-[#363636] hover:bg-[#484848] text-slate-300 hover:text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-sm sm:text-base transition-colors"
           >
             Sign Out
           </button>
@@ -352,7 +354,7 @@ export default function KioskPage() {
                 onChange={(e) => setManualTag(e.target.value)}
                 placeholder="Type asset tag..."
                 style={{ caretColor: '#F5B700' }}
-                className="flex-1 bg-black/60 text-white placeholder-slate-500 border border-slate-700 rounded-xl px-3 py-2 text-base focus:outline-none focus:border-brand transition-colors"
+                className="flex-1 bg-black/60 text-white placeholder-slate-500 border border-slate-600 rounded-xl px-3 py-2 text-base focus:outline-none focus:border-brand transition-colors"
                 disabled={state !== STATES.SCANNING}
               />
               <button
@@ -367,13 +369,13 @@ export default function KioskPage() {
         </div>
 
         {/* Right panel */}
-        <div id="tour-basket-panel" className="flex-1 min-h-0 w-full md:w-2/5 bg-[#232323] flex flex-col overflow-hidden">
+        <div id="tour-basket-panel" className="flex-1 min-h-0 w-full md:w-2/5 bg-white dark:bg-[#232323] flex flex-col overflow-hidden transition-colors">
 
           {/* SCANNING — basket view */}
           {state === STATES.SCANNING && (
             <>
               <div className="flex-1 overflow-y-auto p-3 sm:p-6 flex flex-col gap-3">
-                <h2 className="text-2xl font-bold text-white flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center justify-between">
                   Basket
                   {basket.length > 0 && (
                     <span className="bg-brand text-slate-900 text-base font-bold px-3 py-1 rounded-full">
@@ -386,12 +388,12 @@ export default function KioskPage() {
                   <div className="flex-1 flex flex-col">
                     <div className="flex flex-col items-center justify-center text-center py-8">
                       <div className="text-5xl mb-4">🛒</div>
-                      <p className="text-slate-500 text-xl">Scan items to add them to your basket</p>
+                      <p className="text-slate-400 dark:text-slate-500 text-xl">Scan items to add them to your basket</p>
                     </div>
                     {userCheckouts.length > 0 && (
                       <div className="mt-2">
                         <div className="flex items-center justify-between mb-2">
-                          <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">
+                          <h3 className="text-sm font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">
                             Your current checkouts
                           </h3>
                           {userCheckouts.some((a) => !basket.some((b) => b.asset.id === a.id)) && (
@@ -412,18 +414,18 @@ export default function KioskPage() {
                             const days = overdueInfo(asset.expected_checkin);
                             const inBasket = basket.some((b) => b.asset.id === asset.id);
                             return (
-                              <div key={asset.id} className="flex items-center gap-3 bg-[#2f2f2f] border border-slate-700 rounded-xl px-3 py-2">
+                              <div key={asset.id} className="flex items-center gap-3 bg-slate-50 dark:bg-[#2f2f2f] border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2">
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-semibold text-white truncate">{asset.name}</p>
+                                  <p className="text-sm font-semibold text-slate-800 dark:text-white truncate">{asset.name}</p>
                                   <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                                    <span className="text-xs text-slate-500">{asset.asset_tag}</span>
+                                    <span className="text-xs text-slate-400 dark:text-slate-500">{asset.asset_tag}</span>
                                     {asset.expected_checkin && (
-                                      <span className="text-xs text-slate-500">
+                                      <span className="text-xs text-slate-400 dark:text-slate-500">
                                         Due {formatDate(asset.expected_checkin)}
                                       </span>
                                     )}
                                     {days && (
-                                      <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-red-900/40 text-red-400">
+                                      <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400">
                                         {days}d overdue
                                       </span>
                                     )}
@@ -436,7 +438,7 @@ export default function KioskPage() {
                                     playBeep(true);
                                     setBasket((b) => [...b, { asset, action: 'checkin' }]);
                                   }}
-                                  className="flex-shrink-0 text-sm font-semibold px-3 py-1.5 rounded-lg border-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed border-green-600 text-green-500 hover:bg-green-900/20"
+                                  className="flex-shrink-0 text-sm font-semibold px-3 py-1.5 rounded-lg border-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed border-green-500 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20"
                                 >
                                   {inBasket ? 'Added' : 'Return'}
                                 </button>
@@ -449,51 +451,51 @@ export default function KioskPage() {
                   </div>
                 ) : (
                   basket.map((item, i) => (
-                    <div key={i} className="flex items-start gap-2 sm:gap-3 bg-[#2f2f2f] border border-slate-700 rounded-xl p-3 sm:p-4">
+                    <div key={i} className="flex items-start gap-2 sm:gap-3 bg-slate-50 dark:bg-[#2f2f2f] border border-slate-200 dark:border-slate-700 rounded-xl p-3 sm:p-4 transition-colors">
                       {/* Product image */}
                       {item.asset.image ? (
                         <img
                           src={item.asset.image}
                           alt={item.asset.name}
-                          className="w-14 h-14 sm:w-20 sm:h-20 object-contain rounded-lg bg-[#1e1e1e] border border-slate-700 flex-shrink-0"
+                          className="w-14 h-14 sm:w-20 sm:h-20 object-contain rounded-lg bg-white dark:bg-[#1e1e1e] border border-slate-200 dark:border-slate-700 flex-shrink-0"
                         />
                       ) : (
-                        <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-lg bg-[#363636] border border-slate-700 flex-shrink-0 flex items-center justify-center text-slate-500 text-2xl sm:text-3xl">
+                        <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-lg bg-slate-200 dark:bg-[#363636] border border-slate-200 dark:border-slate-700 flex-shrink-0 flex items-center justify-center text-slate-400 text-2xl sm:text-3xl">
                           📦
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-lg font-semibold text-white leading-tight">{item.asset.name}</p>
+                        <p className="text-lg font-semibold text-slate-800 dark:text-white leading-tight">{item.asset.name}</p>
                         {item.asset.model?.name && (
-                          <p className="text-slate-400 text-sm mt-0.5">{item.asset.model.name}</p>
+                          <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">{item.asset.model.name}</p>
                         )}
                         <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
-                          <span className="text-slate-400 text-sm">
-                            <span className="font-medium text-slate-300">Tag:</span> {item.asset.asset_tag}
+                          <span className="text-slate-500 dark:text-slate-400 text-sm">
+                            <span className="font-medium text-slate-600 dark:text-slate-300">Tag:</span> {item.asset.asset_tag}
                           </span>
                           {item.asset.serial && (
-                            <span className="text-slate-400 text-sm">
-                              <span className="font-medium text-slate-300">S/N:</span> {item.asset.serial}
+                            <span className="text-slate-500 dark:text-slate-400 text-sm">
+                              <span className="font-medium text-slate-600 dark:text-slate-300">S/N:</span> {item.asset.serial}
                             </span>
                           )}
                         </div>
                         <div className="mt-2 flex items-center gap-2 flex-wrap">
                           <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
                             item.action === 'checkin'
-                              ? 'bg-green-900/40 text-green-400'
-                              : 'bg-brand-light/20 text-brand'
+                              ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400'
+                              : 'bg-brand-light/40 dark:bg-brand-light/20 text-slate-700 dark:text-brand'
                           }`}>
                             {item.action === 'checkin' ? 'Return' : 'Check Out'}
                           </span>
                           {item.action === 'checkin' && item.asset.assigned_to?.name && (
-                            <span className="text-xs text-slate-500">
-                              checked out to <span className="font-semibold text-slate-400">{item.asset.assigned_to.name}</span>
+                            <span className="text-xs text-slate-400 dark:text-slate-500">
+                              checked out to <span className="font-semibold text-slate-600 dark:text-slate-400">{item.asset.assigned_to.name}</span>
                             </span>
                           )}
                           {item.action === 'checkin' && (() => {
                             const days = overdueInfo(item.asset.expected_checkin);
                             return days ? (
-                              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-900/40 text-red-400">
+                              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400">
                                 {days}d overdue
                               </span>
                             ) : null;
@@ -502,8 +504,8 @@ export default function KioskPage() {
                         <div className="mt-2 flex items-center gap-2">
                           <label className={`cursor-pointer text-sm px-3 py-1 rounded-lg border transition-colors ${
                             imageUploading[i]
-                              ? 'border-slate-700 text-slate-600'
-                              : 'border-slate-600 hover:border-brand text-slate-400 hover:text-brand'
+                              ? 'border-slate-200 dark:border-slate-700 text-slate-300 dark:text-slate-600'
+                              : 'border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-brand hover:text-brand'
                           }`}>
                             {imageUploading[i] ? 'Uploading...' : 'Add photo'}
                             <input
@@ -520,16 +522,16 @@ export default function KioskPage() {
                             />
                           </label>
                           {imageMsg[i] === 'ok' && (
-                            <span className="text-green-500 text-sm font-semibold">Uploaded</span>
+                            <span className="text-green-600 dark:text-green-500 text-sm font-semibold">Uploaded</span>
                           )}
                           {imageMsg[i] && imageMsg[i] !== 'ok' && (
-                            <span className="text-red-400 text-sm">{imageMsg[i]}</span>
+                            <span className="text-red-500 dark:text-red-400 text-sm">{imageMsg[i]}</span>
                           )}
                         </div>
                       </div>
                       <button
                         onClick={() => removeFromBasket(i)}
-                        className="text-slate-600 hover:text-red-400 text-2xl font-bold leading-none transition-colors flex-shrink-0"
+                        className="text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 text-2xl font-bold leading-none transition-colors flex-shrink-0"
                         title="Remove"
                       >
                         ×
@@ -540,8 +542,8 @@ export default function KioskPage() {
               </div>
 
               {basket.length > 0 && (
-                <div className="p-3 sm:p-6 border-t border-slate-700 flex flex-col gap-2 sm:gap-3">
-                  <div className="text-slate-500 text-sm text-center">
+                <div className="p-3 sm:p-6 border-t border-slate-200 dark:border-slate-700 flex flex-col gap-2 sm:gap-3">
+                  <div className="text-slate-400 dark:text-slate-500 text-sm text-center">
                     {checkoutCount > 0 && <span>{checkoutCount} to check out</span>}
                     {checkoutCount > 0 && checkinCount > 0 && <span> · </span>}
                     {checkinCount > 0 && <span>{checkinCount} to return</span>}
@@ -554,7 +556,7 @@ export default function KioskPage() {
                   </button>
                   <button
                     onClick={resetToScanning}
-                    className="w-full border border-slate-700 hover:border-slate-500 text-slate-400 hover:text-slate-200 py-3 rounded-2xl text-lg transition-colors"
+                    className="w-full border border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 py-3 rounded-2xl text-lg transition-colors"
                   >
                     Clear Basket
                   </button>
@@ -566,8 +568,8 @@ export default function KioskPage() {
           {/* DURATION */}
           {state === STATES.DURATION && (
             <div className="flex-1 flex flex-col p-4 sm:p-8 gap-3 sm:gap-5 overflow-y-auto">
-              <h2 className="text-2xl sm:text-3xl font-bold text-white">How long do you need them?</h2>
-              <p className="text-slate-400 text-base">Applies to all {checkoutCount} item{checkoutCount !== 1 ? 's' : ''} being checked out.</p>
+              <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-white">How long do you need them?</h2>
+              <p className="text-slate-500 dark:text-slate-400 text-base">Applies to all {checkoutCount} item{checkoutCount !== 1 ? 's' : ''} being checked out.</p>
 
               <div className="grid grid-cols-2 gap-3">
                 {presets.map((preset) => (
@@ -577,7 +579,7 @@ export default function KioskPage() {
                     className={`py-5 rounded-2xl text-xl font-semibold border-2 transition-colors ${
                       !useCustom && selectedPreset?.label === preset.label
                         ? 'bg-brand border-brand text-slate-900'
-                        : 'bg-[#2f2f2f] border-slate-700 text-slate-200 hover:border-brand'
+                        : 'bg-white dark:bg-[#2f2f2f] border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-brand'
                     }`}
                   >
                     {preset.label}
@@ -588,7 +590,7 @@ export default function KioskPage() {
                   className={`py-5 rounded-2xl text-xl font-semibold border-2 transition-colors col-span-2 ${
                     useCustom
                       ? 'bg-brand border-brand text-slate-900'
-                      : 'bg-[#2f2f2f] border-slate-700 text-slate-200 hover:border-brand'
+                      : 'bg-white dark:bg-[#2f2f2f] border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-brand'
                   }`}
                 >
                   Custom Date
@@ -601,20 +603,20 @@ export default function KioskPage() {
                   value={customDate}
                   min={new Date().toISOString().split('T')[0]}
                   onChange={(e) => setCustomDate(e.target.value)}
-                  style={{ caretColor: '#F5B700', colorScheme: 'dark' }}
-                  className="w-full bg-[#2f2f2f] border-2 border-slate-700 text-white rounded-xl px-4 py-4 text-xl focus:outline-none focus:border-brand transition-colors"
+                  style={{ caretColor: '#F5B700', colorScheme: 'light dark' }}
+                  className="w-full bg-white dark:bg-[#2f2f2f] border-2 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white rounded-xl px-4 py-4 text-xl focus:outline-none focus:border-brand transition-colors"
                 />
               )}
 
               {dueDate && (
-                <div className="bg-[#2f2f2f] border border-slate-700 rounded-xl px-5 py-3 text-slate-300 text-lg text-center">
-                  Return by: <span className="font-bold text-brand">{formatDate(dueDate)}</span>
+                <div className="bg-brand-light/30 dark:bg-[#2f2f2f] border border-brand-light dark:border-slate-700 rounded-xl px-5 py-3 text-slate-700 dark:text-slate-300 text-lg text-center">
+                  Return by: <span className="font-bold text-slate-900 dark:text-brand">{formatDate(dueDate)}</span>
                 </div>
               )}
 
               <div className="flex flex-col gap-1">
-                <label className="text-slate-400 font-semibold text-base">
-                  Note <span className="text-slate-600 font-normal">(optional)</span>
+                <label className="text-slate-600 dark:text-slate-400 font-semibold text-base">
+                  Note <span className="text-slate-400 dark:text-slate-600 font-normal">(optional)</span>
                 </label>
                 <textarea
                   value={note}
@@ -622,14 +624,14 @@ export default function KioskPage() {
                   placeholder="Reason, location, project..."
                   rows={2}
                   style={{ caretColor: '#F5B700' }}
-                  className="bg-[#2f2f2f] border-2 border-slate-700 text-white placeholder-slate-600 rounded-xl px-4 py-3 text-base focus:outline-none focus:border-brand resize-none transition-colors"
+                  className="bg-white dark:bg-[#2f2f2f] border-2 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 rounded-xl px-4 py-3 text-base focus:outline-none focus:border-brand resize-none transition-colors"
                 />
               </div>
 
               <div className="flex gap-3 mt-auto">
                 <button
                   onClick={() => setState(STATES.SCANNING)}
-                  className="flex-1 border border-slate-700 hover:border-slate-500 text-slate-400 hover:text-slate-200 py-4 rounded-2xl text-xl transition-colors"
+                  className="flex-1 border border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 py-4 rounded-2xl text-xl transition-colors"
                 >
                   Back
                 </button>
@@ -648,7 +650,7 @@ export default function KioskPage() {
           {state === STATES.PROCESSING && (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
               <div className="text-6xl mb-6 animate-spin">⚙️</div>
-              <h2 className="text-3xl font-bold text-slate-300">Processing {basket.length} item{basket.length !== 1 ? 's' : ''}...</h2>
+              <h2 className="text-3xl font-bold text-slate-600 dark:text-slate-300">Processing {basket.length} item{basket.length !== 1 ? 's' : ''}...</h2>
             </div>
           )}
 
@@ -657,28 +659,28 @@ export default function KioskPage() {
             <div className="flex-1 flex flex-col p-4 sm:p-8 gap-3 sm:gap-4 overflow-y-auto">
               <div className="text-center">
                 <div className="text-6xl mb-3">✅</div>
-                <h2 className="text-3xl font-bold text-green-400">Done!</h2>
+                <h2 className="text-3xl font-bold text-green-600 dark:text-green-400">Done!</h2>
                 {dueDate && checkoutCount > 0 && (
-                  <p className="text-slate-400 text-lg mt-1">Return by {formatDate(dueDate)}</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-lg mt-1">Return by {formatDate(dueDate)}</p>
                 )}
               </div>
 
               <div className="flex flex-col gap-2 flex-1 overflow-y-auto">
                 {results.map((r, i) => (
-                  <div key={i} className={`flex items-center gap-3 rounded-xl px-4 py-3 ${r.ok ? 'bg-green-900/30 border border-green-800' : 'bg-red-900/30 border border-red-800'}`}>
+                  <div key={i} className={`flex items-center gap-3 rounded-xl px-4 py-3 ${r.ok ? 'bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800'}`}>
                     <span className="text-xl">{r.ok ? '✓' : '✗'}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-white truncate">{r.name}</p>
-                      {!r.ok && <p className="text-red-400 text-sm">{r.error}</p>}
+                      <p className="font-semibold text-slate-800 dark:text-white truncate">{r.name}</p>
+                      {!r.ok && <p className="text-red-600 dark:text-red-400 text-sm">{r.error}</p>}
                     </div>
-                    <span className={`text-sm font-bold px-2 py-0.5 rounded-full ${r.action === 'checkin' ? 'bg-green-900/40 text-green-400' : 'bg-brand-light/20 text-brand'}`}>
+                    <span className={`text-sm font-bold px-2 py-0.5 rounded-full ${r.action === 'checkin' ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400' : 'bg-brand-light/40 dark:bg-brand-light/20 text-slate-700 dark:text-brand'}`}>
                       {r.action === 'checkin' ? 'Returned' : 'Out'}
                     </span>
                   </div>
                 ))}
               </div>
 
-              <p className="text-slate-600 text-center">Returning in {countdown}s...</p>
+              <p className="text-slate-400 dark:text-slate-600 text-center">Returning in {countdown}s...</p>
               <button
                 onClick={resetToScanning}
                 className="w-full bg-brand hover:bg-brand-dark text-slate-900 py-5 rounded-2xl text-2xl font-bold transition-colors"

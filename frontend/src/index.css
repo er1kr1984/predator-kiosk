@@ -8,6 +8,16 @@ html, body, #root {
   height: 100%;
 }
 
+/* Hide the native browser password-reveal eye (Edge / Chrome) */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+input[type="password"]::-webkit-credentials-auto-fill-button,
+input[type="password"]::-webkit-strong-password-auto-fill-button {
+  display: none !important;
+}
+
 body {
   font-family: 'Open Sans', system-ui, -apple-system, sans-serif;
 }
