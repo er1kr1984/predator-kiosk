@@ -96,6 +96,7 @@ export default function KioskPage() {
   const [userCheckouts, setUserCheckouts] = useState([]);
   const [imageUploading, setImageUploading] = useState({});
   const [imageMsg, setImageMsg] = useState({});
+  const [axisImgSrc, setAxisImgSrc] = useState(null);
   const [idleSecondsLeft, setIdleSecondsLeft] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const settingsRef = useRef(null);
@@ -119,6 +120,26 @@ export default function KioskPage() {
       .then((data) => setUserCheckouts(data?.rows || []))
       .catch(() => {});
   }, [user.id]);
+
+  // AXIS camera: poll /api/camera/snapshot to drive the live view display
+  useEffect(() => {
+    if (config?.cameraType !== 'axis') return;
+    let active = true;
+    const poll = async () => {
+      if (!active) return;
+      try {
+        const res = await fetch('/api/camera/snapshot', { cache: 'no-store' });
+        if (res.ok && active) {
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          setAxisImgSrc((prev) => { if (prev) URL.revokeObjectURL(prev); return url; });
+        }
+      } catch {}
+      if (active) setTimeout(poll, 500);
+    };
+    poll();
+    return () => { active = false; };
+  }, [config?.cameraType]);
 
   const resetToScanning = useCallback(() => {
     setState(STATES.SCANNING);
@@ -382,7 +403,7 @@ export default function KioskPage() {
           {config?.cameraType === 'webcam' ? (
             <video ref={videoRef} className="w-full h-full object-cover" muted playsInline />
           ) : (
-            <img src="/api/camera/stream" alt="Camera feed" className="w-full h-full object-cover" />
+            <img src={axisImgSrc || undefined} alt="Camera feed" className="w-full h-full object-cover" />
           )}
           <canvas ref={canvasRef} className="hidden" />
 
@@ -417,7 +438,18 @@ export default function KioskPage() {
           {/* Manual tag input */}
           <div id="tour-manual-input" className="absolute bottom-2 left-2 right-2">
             <form
-              onSubmit={(e) => { e.preventDefault(); if (manualTag.trim()) { processTag(manualTag.trim()); setManualTag(''); } }}
+              onSubmit={(e) => {
+                e.preventDefault();
+                const trimmed = manualTag.trim();
+                if (!trimmed) return;
+                if (scanning) {
+                  setScanMsg('Scanner busy — please wait');
+                  setTimeout(() => setScanMsg(''), 1500);
+                  return; // keep the typed tag in the input so the user can retry
+                }
+                processTag(trimmed);
+                setManualTag('');
+              }}
               className="flex gap-2"
             >
               <input
@@ -527,7 +559,7 @@ export default function KioskPage() {
                       {/* Product image */}
                       {item.asset.image ? (
                         <img
-                          src={item.asset.image}
+                          src={`/api/proxy-image?url=${encodeURIComponent(item.asset.image)}`}
                           alt={item.asset.name}
                           className="w-14 h-14 sm:w-20 sm:h-20 object-contain rounded-lg bg-white dark:bg-[#1e1e1e] border border-slate-200 dark:border-slate-700 flex-shrink-0"
                         />

@@ -6,12 +6,8 @@ const REQUESTED_FORMATS = [
   'data_matrix', 'ean_13', 'ean_8', 'itf', 'pdf417', 'upc_a', 'upc_e', 'aztec',
 ];
 
-// Fraction of the frame to scan (centred). 0.5 = centre 50% × 50% of each axis.
-// This cuts pixel count by ~75%, making the decoder 3-4× faster.
-const CROP = 0.5;
-
-// How often to attempt a decode (ms). 100ms = up to 10 attempts/sec.
-const SCAN_INTERVAL_MS = 100;
+// How often to attempt a decode (ms). 66ms = ~15 attempts/sec.
+const SCAN_INTERVAL_MS = 66;
 
 async function initBarcodeDetector() {
   if (!('BarcodeDetector' in window)) return null;
@@ -25,16 +21,6 @@ async function initBarcodeDetector() {
   } catch {
     return null;
   }
-}
-
-/**
- * For a given source (video/image), returns the crop rect for the centre CROP fraction.
- * e.g. 1280×720 → sx=320, sy=180, sw=640, sh=360
- */
-function centreRect(w, h) {
-  const sw = Math.floor(w * CROP);
-  const sh = Math.floor(h * CROP);
-  return { sx: Math.floor((w - sw) / 2), sy: Math.floor((h - sh) / 2), sw, sh };
 }
 
 export function useQRScanner({ cameraType, active, onDetected }) {
@@ -63,8 +49,9 @@ export function useQRScanner({ cameraType, active, onDetected }) {
   }, [active, onDetected]);
 
   /**
-   * Decode one source. Crops to the centre CROP fraction before decoding.
-   * Uses native BarcodeDetector when available, falls back to jsQR (QR only).
+   * Decode one source (full frame).
+   * Uses native BarcodeDetector when available (hardware-accelerated, multi-format),
+   * falls back to jsQR (QR only) with both normal and inverted attempts.
    */
   const scanSource = useCallback(async (source) => {
     if (!active) return;
@@ -73,12 +60,9 @@ export function useQRScanner({ cameraType, active, onDetected }) {
       const h = source.videoHeight ?? source.naturalHeight ?? source.height;
       if (!w || !h) return;
 
-      const { sx, sy, sw, sh } = centreRect(w, h);
-
       // ── Native BarcodeDetector (multi-format, hardware-accelerated) ──────
       if (detectorRef.current) {
-        // createImageBitmap crops natively before handing to BarcodeDetector
-        const bitmap = await createImageBitmap(source, sx, sy, sw, sh);
+        const bitmap = await createImageBitmap(source);
         const codes  = await detectorRef.current.detect(bitmap);
         bitmap.close();
         if (codes.length > 0) handleCode(codes[0].rawValue);
@@ -88,12 +72,13 @@ export function useQRScanner({ cameraType, active, onDetected }) {
       // ── jsQR fallback — QR only ───────────────────────────────────────────
       const canvas = canvasRef.current;
       if (!canvas) return;
-      canvas.width  = sw;
-      canvas.height = sh;
+      canvas.width  = w;
+      canvas.height = h;
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
-      ctx.drawImage(source, sx, sy, sw, sh, 0, 0, sw, sh);
-      const imageData = ctx.getImageData(0, 0, sw, sh);
-      const result = jsQR(imageData.data, sw, sh);
+      ctx.drawImage(source, 0, 0);
+      const imageData = ctx.getImageData(0, 0, w, h);
+      // attemptBoth handles dark-on-light and light-on-dark QR codes
+      const result = jsQR(imageData.data, w, h, { inversionAttempts: 'attemptBoth' });
       if (result?.data) handleCode(result.data);
     } catch {
       // No code in frame — normal, ignore
@@ -170,7 +155,7 @@ export function useQRScanner({ cameraType, active, onDetected }) {
       } catch {
         axisLockRef.current = false;
       }
-    }, 250);
+    }, 200);
 
     return () => clearInterval(intervalRef.current);
   }, [cameraType, active, scanSource]);

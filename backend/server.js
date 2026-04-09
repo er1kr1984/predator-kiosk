@@ -71,7 +71,7 @@ function acsTimestamp(date = new Date()) {
     `${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}.0000000`;
 }
 
-async function sendToAcs(config, { assetName, assetTag, serial, userName, dueDate, action }) {
+async function sendToAcs(config, { assetName, assetModel, serial, userName, dueDate, action }) {
   if (!config.acsEnabled) { console.log('[ACS] Skipped — acsEnabled is false'); return; }
   if (!config.acsUrl || !config.acsUsername || !config.acsSourceKey) {
     console.log('[ACS] Skipped — missing url/username/sourceKey');
@@ -79,11 +79,11 @@ async function sendToAcs(config, { assetName, assetTag, serial, userName, dueDat
   }
 
   const data = {
-    Asset:  { DataType: 'Text', Value: assetName || '' },
-    Tag:    { DataType: 'Text', Value: assetTag  || '' },
-    Serial: { DataType: 'Text', Value: serial    || 'N/A' },
-    User:   { DataType: 'Text', Value: userName  || '' },
-    Action: { DataType: 'Text', Value: action    || '' },
+    Asset:  { DataType: 'Text', Value: assetName  || '' },
+    Model:  { DataType: 'Text', Value: assetModel || '' },
+    Serial: { DataType: 'Text', Value: serial     || 'N/A' },
+    User:   { DataType: 'Text', Value: userName   || '' },
+    Action: { DataType: 'Text', Value: action     || '' },
   };
   if (action === 'Checkout' && dueDate) {
     data.Due = { DataType: 'Text', Value: dueDate };
@@ -312,6 +312,30 @@ app.post('/api/acs/verify', async (req, res) => {
   }
 });
 
+// --- Image proxy (avoids mixed-content when Snipe-IT serves HTTP images on an HTTPS kiosk) ---
+
+app.get('/api/proxy-image', async (req, res) => {
+  const { url } = req.query;
+  if (!url) return res.status(400).send('Missing url');
+  const config = loadConfig();
+  // Only proxy images from the configured Snipe-IT host to prevent open-proxy abuse
+  const snipeHost = config.snipeItUrl ? new URL(config.snipeItUrl).host : null;
+  let targetHost;
+  try { targetHost = new URL(url).host; } catch { return res.status(400).send('Invalid url'); }
+  if (!snipeHost || targetHost !== snipeHost) {
+    return res.status(403).send('Proxy only permitted for configured Snipe-IT host');
+  }
+  try {
+    const response = await axios.get(url, { responseType: 'stream', timeout: 8000 });
+    res.setHeader('Content-Type', response.headers['content-type'] || 'image/jpeg');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    response.data.pipe(res);
+    response.data.on('error', () => res.end());
+  } catch {
+    res.status(502).send('Image unavailable');
+  }
+});
+
 // --- Camera endpoints ---
 
 app.get('/api/camera/stream', (req, res) => {
@@ -344,13 +368,45 @@ app.get('/api/camera/snapshot', async (req, res) => {
     const response = await axios({
       method: 'get',
       url,
-      responseType: 'arraybuffer',
+      responseType: 'stream',
       auth: cameraAuth(config),
       timeout: 5000,
     });
-    res.setHeader('Content-Type', response.headers['content-type'] || 'image/jpeg');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.send(response.data);
+    const contentType = response.headers['content-type'] || '';
+
+    if (contentType.includes('multipart')) {
+      // MJPEG stream — extract the first complete JPEG frame (FF D8 … FF D9)
+      const jpeg = await new Promise((resolve, reject) => {
+        let done = false;
+        const chunks = [];
+        response.data.on('data', (chunk) => {
+          if (done) return;
+          chunks.push(chunk);
+          const buf = Buffer.concat(chunks);
+          const start = buf.indexOf(Buffer.from([0xff, 0xd8]));
+          if (start === -1) return;
+          const end = buf.indexOf(Buffer.from([0xff, 0xd9]), start);
+          if (end === -1) return;
+          done = true;
+          response.data.destroy();
+          resolve(buf.slice(start, end + 2));
+        });
+        response.data.on('error', (err) => { if (!done) reject(err); });
+        response.data.on('end', () => { if (!done) reject(new Error('No JPEG frame')); });
+      });
+      res.setHeader('Content-Type', 'image/jpeg');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.send(jpeg);
+    } else {
+      const chunks = [];
+      response.data.on('data', (chunk) => chunks.push(chunk));
+      response.data.on('end', () => {
+        res.setHeader('Content-Type', contentType || 'image/jpeg');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.send(Buffer.concat(chunks));
+      });
+      response.data.on('error', () => res.status(503).send('Snapshot unavailable'));
+    }
   } catch {
     res.status(503).send('Snapshot unavailable');
   }
@@ -506,24 +562,42 @@ app.get('/api/assets/bytag/:tag', async (req, res) => {
     }
   }
 
-  // Asset tag lookup
+  // Asset tag lookup — exact match first
+  // Note: Snipe-IT sometimes returns HTTP 200 with {status:'error'} instead of 404
   try {
     const response = await axios.get(
       `${config.snipeItUrl}/api/v1/hardware/bytag/${encodeURIComponent(scanned)}`,
       { headers: snipeHeaders(config) }
     );
-    res.json(response.data);
+    if (response.data?.id) return res.json(response.data); // found — return it
+    // else: Snipe-IT returned 200+error body — fall through to search
   } catch (err) {
-    if (err.response?.status === 404) {
-      return res.status(404).json({ error: 'Asset not found' });
+    if (err.response?.status !== 404) {
+      return res.status(502).json({ error: 'Failed to reach Snipe-IT', detail: err.message });
     }
+    // 404 — fall through to search
+  }
+
+  // Partial / case-insensitive search fallback (handles manual typing, wrong case, etc.)
+  try {
+    const response = await axios.get(
+      `${config.snipeItUrl}/api/v1/hardware?search=${encodeURIComponent(scanned)}&limit=10&sort=asset_tag&order=asc`,
+      { headers: snipeHeaders(config) }
+    );
+    const rows = response.data?.rows || [];
+    if (rows.length === 0) return res.status(404).json({ error: 'Asset not found' });
+    // Prefer exact case-insensitive tag match; otherwise first result
+    const lower = scanned.toLowerCase();
+    const exact = rows.find((r) => r.asset_tag?.toLowerCase() === lower);
+    return res.json(exact || rows[0]);
+  } catch (err) {
     res.status(502).json({ error: 'Failed to reach Snipe-IT', detail: err.message });
   }
 });
 
 app.post('/api/assets/:id/checkout', async (req, res) => {
   const config = loadConfig();
-  const { userId, expectedCheckin, note, assetName, assetTag, serial, userName } = req.body;
+  const { userId, expectedCheckin, note, assetName, assetModel, serial, userName } = req.body;
   try {
     const response = await axios.post(
       `${config.snipeItUrl}/api/v1/hardware/${req.params.id}/checkout`,
@@ -538,7 +612,7 @@ app.post('/api/assets/:id/checkout', async (req, res) => {
 
     // Fire-and-forget to ACS DataSearch
     sendToAcs(config, {
-      assetName, assetTag, serial, userName,
+      assetName, assetModel, serial, userName,
       dueDate: expectedCheckin,
       action: 'Checkout',
     }).catch((e) => console.error('[ACS] checkout event failed — status:', e.response?.status, 'body:', JSON.stringify(e.response?.data), 'msg:', e.message));
@@ -551,7 +625,7 @@ app.post('/api/assets/:id/checkout', async (req, res) => {
 
 app.post('/api/assets/:id/checkin', async (req, res) => {
   const config = loadConfig();
-  const { note, assetName, assetTag, serial, userName } = req.body;
+  const { note, assetName, assetModel, serial, userName } = req.body;
   try {
     const response = await axios.post(
       `${config.snipeItUrl}/api/v1/hardware/${req.params.id}/checkin`,
@@ -561,7 +635,7 @@ app.post('/api/assets/:id/checkin', async (req, res) => {
 
     // Fire-and-forget to ACS DataSearch
     sendToAcs(config, {
-      assetName, assetTag, serial, userName,
+      assetName, assetModel, serial, userName,
       action: 'Return',
     }).catch((e) => console.error('[ACS] checkin event failed — status:', e.response?.status, 'body:', JSON.stringify(e.response?.data), 'msg:', e.message));
 

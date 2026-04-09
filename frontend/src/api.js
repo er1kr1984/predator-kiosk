@@ -38,7 +38,7 @@ export async function checkoutAsset(id, userId, expectedCheckin, assetInfo, user
     expectedCheckin,
     note: note || undefined,
     assetName: assetInfo?.name || assetInfo?.asset_tag || '',
-    assetTag: assetInfo?.asset_tag || '',
+    assetModel: assetInfo?.model?.name || '',
     serial: assetInfo?.serial || '',
     userName: userName || '',
   });
@@ -49,7 +49,7 @@ export async function checkinAsset(id, assetInfo, userName, note) {
   const { data } = await api.post(`/assets/${id}/checkin`, {
     note: note || undefined,
     assetName: assetInfo?.name || assetInfo?.asset_tag || '',
-    assetTag: assetInfo?.asset_tag || '',
+    assetModel: assetInfo?.model?.name || '',
     serial: assetInfo?.serial || '',
     userName: userName || '',
   });
